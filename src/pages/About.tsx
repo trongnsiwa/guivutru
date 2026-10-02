@@ -12,7 +12,7 @@ export function About() {
         <h1 className="font-display text-3xl font-normal text-text-primary">
           Về Gửi Vũ Trụ ✨
         </h1>
-        <p className="font-hand font-semibold text-xl text-lavender">
+        <p className="font-display font-normal text-[22px] sm:text-[24px] text-lavender leading-[1.3]">
           "Viết điều mình muốn. Niêm phong. Để vũ trụ lo."
         </p>
       </div>

@@ -9,17 +9,12 @@ export function DevFonts() {
   const diacriticsAll = 'à á ả ã ạ ă ằ ắ ẳ ẵ ặ â ầ ấ ẩ ẫ ậ è é ẻ ẽ ẹ ê ề ế ể ễ ệ ì í ỉ ĩ ị ò ó ỏ õ ọ ô ồ ố ổ ỗ ộ ơ ờ ớ ở ỡ ợ ù ú ủ ũ ụ ư ừ ứ ử ữ ự ỳ ý ỷ ỹ ỵ đ';
 
   const sampleRef = useRef<HTMLParagraphElement>(null);
-  const kalamRef = useRef<HTMLParagraphElement>(null);
   const [computedFont, setComputedFont] = useState<string>('Detecting...');
-  const [computedKalamFont, setComputedKalamFont] = useState<string>('Detecting...');
 
   useEffect(() => {
     const update = () => {
       if (sampleRef.current) {
         setComputedFont(window.getComputedStyle(sampleRef.current).fontFamily);
-      }
-      if (kalamRef.current) {
-        setComputedKalamFont(window.getComputedStyle(kalamRef.current).fontFamily);
       }
     };
     update();
@@ -38,7 +33,7 @@ export function DevFonts() {
         </Link>
         <span className="rounded bg-mint/10 border border-mint/30 px-2 py-0.5 font-mono text-[10px] text-mint flex items-center gap-1">
           <CheckCircle2 className="h-3 w-3" />
-          <span>INGRID DARLING + NUNITO + SRIRACHA + KALAM</span>
+          <span>INGRID DARLING + NUNITO + SRIRACHA</span>
         </span>
       </div>
 
@@ -100,6 +95,16 @@ export function DevFonts() {
               <span className="text-[10px] font-mono text-text-muted block mb-0.5">26px / wght 400 (TopBar Wordmark "Gửi Vũ Trụ ✨"):</span>
               <p className="font-display font-normal text-[26px] tracking-normal text-text-primary">
                 Gửi Vũ Trụ ✨ — {testPhrase}
+              </p>
+            </div>
+
+            <div>
+              <span className="text-[10px] font-mono text-text-muted block mb-0.5">22px / wght 400 (Footer Signature "Viết điều mình muốn..."):</span>
+              <p className="font-display font-normal text-[22px] tracking-normal leading-[1.3] text-text-secondary">
+                Viết điều mình muốn. Niêm phong. Để vũ trụ lo. <span className="text-star-glow text-sm inline select-none">✨</span>
+              </p>
+              <p className="font-display font-normal text-xl text-star-glow mt-1">
+                Focus marks: ế ề ệ ộ ụ ữ ở ả
               </p>
             </div>
           </div>
@@ -165,41 +170,6 @@ export function DevFonts() {
               <span className="text-[10px] font-mono text-text-muted block mb-0.5">All Vietnamese Diacritics (Nunito 400):</span>
               <p className="font-sans font-normal text-xs leading-[1.8] text-text-secondary">
                 {diacriticsAll}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Kalam (font-hand) */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <span className="text-xs text-lavender font-sans uppercase tracking-wider font-semibold">
-              4. font-hand — Kalam (Accent, Signature, Footer)
-            </span>
-            <span className="text-[10px] font-mono text-mint bg-mint/10 px-2 py-0.5 rounded border border-mint/20">
-              {computedKalamFont}
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <span className="text-[10px] font-mono text-text-muted block mb-0.5">Footer Line (16px, natural slant, not-italic):</span>
-              <p ref={kalamRef} className="font-hand font-normal not-italic text-xl leading-[1.6] text-lavender">
-                Viết điều mình muốn. Niêm phong. Để vũ trụ lo. ✨
-              </p>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-mono text-text-muted block mb-0.5">Focus Characters in Kalam (ế ề ệ ộ ụ ữ ở):</span>
-              <p className="font-hand font-normal not-italic text-2xl text-star-glow">
-                ế ề ệ ộ ụ ữ ở
-              </p>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-mono text-text-muted block mb-0.5">Full Test Phrase in Kalam:</span>
-              <p className="font-hand font-normal not-italic text-base text-text-primary">
-                {testPhrase}
               </p>
             </div>
           </div>

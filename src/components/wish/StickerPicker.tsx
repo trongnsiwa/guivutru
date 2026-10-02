@@ -1,47 +1,62 @@
+import { motion } from 'framer-motion';
 import { STICKERS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { ScrollRow } from '@/components/ui/ScrollRow';
 
 export interface StickerPickerProps {
   selected: string[];
   onChange: (stickers: string[]) => void;
+  onMaxReached?: () => void;
   max?: number;
 }
 
 export function StickerPicker({
   selected,
   onChange,
+  onMaxReached,
   max = 3,
 }: StickerPickerProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   const toggleSticker = (sticker: string) => {
     if (selected.includes(sticker)) {
       onChange(selected.filter((s) => s !== sticker));
     } else {
       if (selected.length < max) {
         onChange([...selected, sticker]);
+      } else {
+        onMaxReached?.();
       }
     }
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <ScrollRow>
       {STICKERS.map((stk) => {
         const isSelected = selected.includes(stk);
         return (
-          <button
+          <motion.button
             key={stk}
             type="button"
             onClick={() => toggleSticker(stk)}
+            whileTap={prefersReducedMotion ? undefined : { scale: 1.2 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 22, duration: 0.18 }}
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-lg border text-lg transition-transform',
+              'flex h-10 w-10 shrink-0 snap-start items-center justify-center rounded-xl border text-xl transition-all cursor-pointer select-none',
               isSelected
-                ? 'bg-lavender/20 border-lavender scale-110 shadow-glow'
-                : 'bg-bg-soft/60 border-border-soft hover:bg-bg-soft hover:border-border-strong'
+                ? 'bg-lavender/25 border-lavender scale-105 shadow-glow ring-1 ring-lavender/50'
+                : 'bg-bg-soft/70 border-border-soft hover:bg-bg-soft hover:border-border-strong'
             )}
+            title={`Dán ${stk}`}
+            aria-label={`Dán ${stk}`}
           >
             {stk}
-          </button>
+          </motion.button>
         );
       })}
-    </div>
+    </ScrollRow>
   );
 }
+
+export default StickerPicker;

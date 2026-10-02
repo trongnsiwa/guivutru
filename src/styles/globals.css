@@ -111,11 +111,67 @@
     font-family: 'Ingrid Darling', cursive, sans-serif;
     font-weight: 400;
   }
+}
 
-  .font-hand {
-    font-family: 'Kalam', cursive, sans-serif;
-    font-style: normal;
-  }
+/* Global scrollbar styling */
+/* 1. Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 2. Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-soft) transparent;
+}
+
+/* 3. Light mode override */
+[data-theme="light"] ::-webkit-scrollbar-thumb,
+.light ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  background-clip: padding-box;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 98, 143, 0.7);
+  background-clip: padding-box;
+}
+
+[data-theme="light"] *,
+.light * {
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Utility class: Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Noise overlay */

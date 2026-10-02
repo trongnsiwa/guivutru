@@ -1,5 +1,5 @@
 import { UnlockPicker } from '@/components/wish/UnlockPicker';
-import { formatDate } from '@/lib/date';
+import { format } from 'date-fns';
 
 export interface Step3UnlockProps {
   unlockAt: number;
@@ -7,39 +7,68 @@ export interface Step3UnlockProps {
 }
 
 export function Step3Unlock({ unlockAt, onUnlockAtChange }: Step3UnlockProps) {
+  const formattedDate = format(new Date(unlockAt), 'dd/MM/yyyy');
+
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="font-display text-2xl font-normal text-text-primary">
-          Bao giờ mở lại? 🔒
-        </h2>
-        <p className="font-sans text-xs text-text-secondary">
-          Hãy cho điều ước chút thời gian để vũ trụ lắng nghe.
-        </p>
-      </div>
+    <div className="w-full flex flex-col items-center">
+      <h1 className="font-display font-normal text-[32px] text-text-primary text-center leading-[1.3] mb-6">
+        Bao giờ mở lại?
+      </h1>
 
-      <UnlockPicker unlockAt={unlockAt} onChange={onUnlockAtChange} />
+      <div className="w-full max-w-[420px] space-y-6">
+        {/* Quick Chips & Custom Input */}
+        <UnlockPicker unlockAt={unlockAt} onChange={onUnlockAtChange} />
 
-      <div className="rounded-md border border-border-soft bg-bg-soft/70 p-4 text-center">
-        <span className="text-xs text-text-muted font-sans">Ngày mở dự kiến:</span>
-        <p className="font-sans font-semibold text-lg text-star-glow mt-1">
-          {formatDate(unlockAt)}
-        </p>
-      </div>
+        {/* Preview line: Ngày mở: DD/MM/YYYY in Nunito 14px, muted */}
+        <div className="rounded-xl border border-border-soft bg-bg-soft/50 py-3.5 px-4 text-center">
+          <p className="font-sans text-[14px] text-text-muted">
+            <span>Ngày mở: </span>
+            <strong className="text-star-glow font-semibold">{formattedDate}</strong>
+          </p>
+        </div>
 
-      <div className="space-y-2 pt-2 border-t border-border-soft">
-        <label className="text-xs font-semibold text-text-secondary font-sans">Ai được đọc?</label>
-        <div className="space-y-2 text-sm font-sans">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="radio" checked readOnly className="accent-lavender" />
-            <span>Chỉ mình mình 🔒</span>
+        {/* Privacy Section */}
+        <div className="space-y-3 pt-2 border-t border-border-soft/60">
+          <label className="block text-xs font-semibold text-text-secondary font-sans uppercase tracking-wider">
+            Ai được đọc?
           </label>
-          <label className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-            <input type="radio" disabled />
-            <span>Ẩn danh trên bầu trời (sắp có ở v2)</span>
-          </label>
+
+          <div className="space-y-2.5 font-sans">
+            <label className="flex items-center gap-3 p-3 rounded-xl border border-border-soft bg-bg-soft/70 cursor-pointer transition-colors hover:border-lavender/40">
+              <input
+                type="radio"
+                name="privacy"
+                checked
+                readOnly
+                className="h-4 w-4 accent-lavender cursor-pointer"
+              />
+              <span className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+                <span>Chỉ mình mình</span>
+                <span className="text-xs">🔒</span>
+              </span>
+            </label>
+
+            <label className="flex items-center justify-between p-3 rounded-xl border border-border-soft/40 bg-bg-soft/30 opacity-50 cursor-not-allowed">
+              <div className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="privacy"
+                  disabled
+                  className="h-4 w-4 cursor-not-allowed"
+                />
+                <span className="text-sm font-normal text-text-secondary">
+                  Ẩn danh trên bầu trời
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-text-muted bg-bg-deep/60 px-2 py-0.5 rounded border border-border-soft/30">
+                sắp có
+              </span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+export default Step3Unlock;

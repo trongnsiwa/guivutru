@@ -30,7 +30,12 @@ export function PageShell() {
           location.pathname === '/' ? 'pt-0' : 'pt-6'
         )}
       >
-        <div className="w-full max-w-[430px] flex-1 flex flex-col">
+        <div
+          className={cn(
+            'w-full flex-1 flex flex-col',
+            location.pathname.startsWith('/viet') ? 'max-w-[640px]' : 'max-w-[430px]'
+          )}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

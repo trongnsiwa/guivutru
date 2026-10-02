@@ -112,9 +112,8 @@ npm install
 - **Default Theme:** Dark mode ("bầu trời đêm").
 - **Tokens:** Never hardcode hex values in UI components — always use Tailwind tokens (`lavender`, `bg-deep`, `star`, etc.).
 - **Typography:**
-  - `font-display`: Ingrid Darling (weight 400 only, display/whimsical headings >= 24px)
+  - `font-display`: Ingrid Darling (weight 400 only, display/whimsical headings & signatures >= 22px)
   - `font-sans`: Nunito (body & UI, weights 400, 500, 600, 700)
   - `font-note`: Sriracha (handwritten note content & share cards, weight 400)
-  - `font-hand`: Kalam (accents, signatures & section tags, weight 400, 700)
   - All fonts configured with Vietnamese subset (`vietnamese, latin, latin-ext`).
 - **Tone:** Vietnamese, gentle Gen Z "mình / bạn" voice (never "quý khách" or "người dùng").

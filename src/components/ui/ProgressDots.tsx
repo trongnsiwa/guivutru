@@ -18,21 +18,23 @@ export function ProgressDots({
         const stepNum = index + 1;
         const isActive = stepNum === currentStep;
         const isDone = stepNum < currentStep;
+        const isClickable = isDone && Boolean(onStepClick);
 
         return (
           <React.Fragment key={stepNum}>
             <button
               type="button"
-              onClick={() => onStepClick?.(stepNum)}
-              disabled={!onStepClick}
+              onClick={() => isClickable && onStepClick?.(stepNum)}
+              disabled={!isClickable}
               className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all',
+                'flex items-center justify-center rounded-full text-xs font-semibold transition-all',
                 isActive
-                  ? 'bg-lavender text-bg-deep ring-2 ring-lavender/50 shadow-glow'
+                  ? 'h-8 w-8 scale-110 bg-lavender text-bg-deep ring-2 ring-lavender/60 shadow-glow font-bold'
                   : isDone
-                  ? 'bg-mint text-bg-deep'
-                  : 'bg-bg-soft text-text-muted border border-border-soft'
+                  ? 'h-7 w-7 bg-bg-soft text-lavender border border-lavender/50 hover:bg-lavender/20 cursor-pointer'
+                  : 'h-7 w-7 bg-bg-soft text-text-muted border border-border-soft/60 opacity-40 cursor-not-allowed'
               )}
+              aria-label={`Bước ${stepNum}`}
             >
               {stepNum}
             </button>
@@ -40,7 +42,7 @@ export function ProgressDots({
               <div
                 className={cn(
                   'h-0.5 w-6 transition-colors',
-                  isDone ? 'bg-mint/80' : 'bg-border-soft'
+                  isDone ? 'bg-lavender/50' : 'bg-border-soft/40'
                 )}
               />
             )}

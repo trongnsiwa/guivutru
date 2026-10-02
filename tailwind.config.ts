@@ -49,7 +49,6 @@ const config: Config = {
       },
       fontFamily: {
         note: ['"Sriracha"', 'cursive', 'sans-serif'],
-        hand: ['"Kalam"', 'cursive', 'sans-serif'],
         display: ['"Ingrid Darling"', 'cursive', 'sans-serif'],
         sans: ['"Nunito"', 'sans-serif'],
         heading: ['"Ingrid Darling"', 'cursive', 'sans-serif'],
