@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="bgGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#241b47" />
+      <stop offset="100%" stop-color="#0f0a24" />
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="100" height="100" rx="24" fill="url(#bgGrad)" stroke="#c9b6ff" stroke-width="2" stroke-opacity="0.3" />
+
+  <!-- Tiny sparkle star -->
+  <path d="M 76 22 Q 76 28 82 28 Q 76 28 76 34 Q 76 28 70 28 Q 76 28 76 22 Z" fill="#ffe9a8" />
+
+  <!-- Monogram GVT -->
+  <text x="50" y="62" font-family="'Ingrid Darling', 'Nunito', cursive, sans-serif" font-weight="400" font-size="34" fill="#c9b6ff" text-anchor="middle" letter-spacing="-1" filter="url(#glow)">GVT</text>
+</svg>

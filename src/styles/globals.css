@@ -1,0 +1,142 @@
+@import './fonts.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+.dark {
+  /* Nền */
+  --bg-deep: #0f0a24;
+  --bg-soft: #1b1436;
+  --bg-elevated: #241b47;
+
+  /* Sao & ánh sáng */
+  --star: #fff9e6;
+  --star-glow: #ffe9a8;
+
+  /* Accent */
+  --lavender: #c9b6ff;
+  --pink: #ffb3d1;
+  --mint: #a0f0dc;
+  --peach: #ffcba4;
+  --sky: #a5d8ff;
+
+  /* Chữ */
+  --text-primary: #f5f1ff;
+  --text-secondary: #b8afd9;
+  --text-muted: #6e628f;
+
+  /* Viền */
+  --border-soft: rgba(201, 182, 255, 0.15);
+  --border-strong: rgba(201, 182, 255, 0.35);
+
+  /* Giấy (Paper themes) */
+  --paper-dem-sao: #1b1436;
+  --paper-dem-sao-border: #c9b6ff;
+  --paper-tim-mong: #241b47;
+  --paper-tim-mong-border: #c9b6ff;
+  --paper-hogn: #3a1f3d;
+  --paper-hogn-border: #ffb3d1;
+  --paper-bien: #0f2036;
+  --paper-bien-border: #a5d8ff;
+  --paper-rung: #122a22;
+  --paper-rung-border: #a0f0dc;
+  --paper-giay-cu: #2b2320;
+  --paper-giay-cu-border: #ffcba4;
+}
+
+.light {
+  /* Nền */
+  --bg-deep: #fffbf5;
+  --bg-soft: #fff4e6;
+  --bg-elevated: #ffffff;
+
+  /* Sao & ánh sáng */
+  --star: #ffd166;
+  --star-glow: #ffeaa7;
+
+  /* Accent */
+  --lavender: #b39dff;
+  --pink: #ffb3d1;
+  --mint: #a0f0dc;
+  --peach: #ffcba4;
+  --sky: #a5d8ff;
+
+  /* Chữ */
+  --text-primary: #3a3352;
+  --text-secondary: #6e628f;
+  --text-muted: #958ba8;
+
+  /* Viền */
+  --border-soft: rgba(179, 157, 255, 0.2);
+  --border-strong: rgba(179, 157, 255, 0.4);
+
+  /* Giấy (Paper themes) */
+  --paper-dem-sao: #1b1436;
+  --paper-dem-sao-border: #c9b6ff;
+  --paper-tim-mong: #241b47;
+  --paper-tim-mong-border: #c9b6ff;
+  --paper-hogn: #3a1f3d;
+  --paper-hogn-border: #ffb3d1;
+  --paper-bien: #0f2036;
+  --paper-bien-border: #a5d8ff;
+  --paper-rung: #122a22;
+  --paper-rung-border: #a0f0dc;
+  --paper-giay-cu: #2b2320;
+  --paper-giay-cu-border: #ffcba4;
+}
+
+@layer base {
+  * {
+    @apply border-border-soft;
+    box-sizing: border-box;
+  }
+
+  html {
+    @apply bg-bg-deep text-text-primary;
+    color-scheme: dark;
+    font-family: 'Nunito', sans-serif;
+    line-height: 1.6;
+  }
+
+  body {
+    @apply bg-bg-deep text-text-primary min-h-screen antialiased;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* Typography shortcuts */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Ingrid Darling', cursive, sans-serif;
+    font-weight: 400;
+  }
+
+  .font-hand {
+    font-family: 'Kalam', cursive, sans-serif;
+    font-style: normal;
+  }
+}
+
+/* Noise overlay */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 99;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
