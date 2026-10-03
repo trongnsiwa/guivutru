@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Moon, BookOpen } from 'lucide-react';
+import { Moon, Sun, BookOpen, Info } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/cn';
 
 export interface TopBarProps {
@@ -10,12 +11,16 @@ export interface TopBarProps {
 export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarProps) {
   const isToi = activePath === '/toi';
   const isAbout = activePath === '/gioi-thieu';
+  const { toggleTheme, isDark } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-bg-deep/70 border-b border-border-soft/50">
       <div className="mx-auto flex h-16 max-w-[430px] items-center justify-between px-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
+        >
           {/* 32px circular badge with crescent moon + tiny star */}
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-soft border border-border-soft shadow-glow group-hover:scale-105 transition-transform text-lavender shrink-0">
             <svg
@@ -27,6 +32,7 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               {/* Crescent moon with dark purple fill */}
               <path
@@ -50,11 +56,11 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
         </Link>
 
         {/* Navigation actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <Link
             to="/toi"
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-sans transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
               isToi
                 ? 'bg-lavender/20 text-lavender font-semibold'
                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-soft'
@@ -68,13 +74,28 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
           <Link
             to="/gioi-thieu"
             className={cn(
-              'p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors',
+              'p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
               isAbout && 'text-lavender bg-bg-soft'
             )}
             title="Về Gửi Vũ Trụ"
+            aria-label="Về Gửi Vũ Trụ"
           >
-            <Moon className="h-4 w-4" />
+            <Info className="h-4 w-4" />
           </Link>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
+            title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+            aria-label={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+          >
+            {isDark ? (
+              <Sun className="h-4 w-4 text-star-glow" />
+            ) : (
+              <Moon className="h-4 w-4 text-text-secondary" />
+            )}
+          </button>
         </div>
       </div>
     </header>

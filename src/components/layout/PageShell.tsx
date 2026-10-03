@@ -39,6 +39,23 @@ export function PageShell() {
         </div>
       </main>
 
+      {/* Screen reader route change announcement */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {location.pathname === '/'
+          ? 'Trang chủ Gửi Vũ Trụ'
+          : location.pathname.startsWith('/viet/xong')
+          ? 'Điều ước đã niêm phong thành công'
+          : location.pathname.startsWith('/viet')
+          ? 'Viết điều ước'
+          : location.pathname.startsWith('/toi')
+          ? 'Góc của tôi'
+          : location.pathname.startsWith('/note')
+          ? 'Chi tiết điều ước'
+          : location.pathname.startsWith('/gioi-thieu')
+          ? 'Giới thiệu'
+          : 'Gửi Vũ Trụ'}
+      </div>
+
       {/* Footer */}
       <Footer />
     </div>

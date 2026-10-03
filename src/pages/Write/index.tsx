@@ -234,7 +234,7 @@ export function Write() {
             <button
               type="button"
               onClick={handleBack}
-              className="p-2 -ml-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors cursor-pointer"
+              className="p-2 -ml-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
               title="Quay lại"
               aria-label="Quay lại bước trước"
             >
@@ -244,7 +244,7 @@ export function Write() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="p-2 -ml-2 rounded-full text-text-muted hover:text-text-secondary hover:bg-bg-soft transition-colors cursor-pointer"
+              className="p-2 -ml-2 rounded-full text-text-muted hover:text-text-secondary hover:bg-bg-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
               title="Về trang chủ"
               aria-label="Về trang chủ"
             >
@@ -269,7 +269,7 @@ export function Write() {
             <button
               type="button"
               onClick={handleRestart}
-              className="p-2 -mr-2 rounded-full text-text-muted hover:text-text-secondary hover:bg-bg-soft transition-colors cursor-pointer"
+              className="p-2 -mr-2 rounded-full text-text-muted hover:text-text-secondary hover:bg-bg-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
               title="Bắt đầu lại"
               aria-label="Bắt đầu lại từ đầu"
             >

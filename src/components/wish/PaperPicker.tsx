@@ -26,7 +26,7 @@ export function PaperPicker({ selected, onChange }: PaperPickerProps) {
               borderColor: theme.borderColor,
             }}
             className={cn(
-              'h-9 w-9 shrink-0 snap-start rounded-full border-2 transition-all duration-200 cursor-pointer focus:outline-none',
+              'h-9 w-9 shrink-0 snap-start rounded-full border-2 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-deep focus-visible:ring-lavender',
               isSelected
                 ? cn(
                     'ring-2 ring-lavender shadow-glow',

@@ -27,7 +27,7 @@ export function ProgressDots({
               onClick={() => isClickable && onStepClick?.(stepNum)}
               disabled={!isClickable}
               className={cn(
-                'flex items-center justify-center rounded-full text-xs font-semibold transition-all',
+                'flex items-center justify-center rounded-full text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
                 isActive
                   ? 'h-8 w-8 scale-110 bg-lavender text-bg-deep ring-2 ring-lavender/60 shadow-glow font-bold'
                   : isDone

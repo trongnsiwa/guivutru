@@ -57,20 +57,20 @@
   --star-glow: #ffeaa7;
 
   /* Accent */
-  --lavender: #b39dff;
+  --lavender: #6e48aa;
   --pink: #ffb3d1;
-  --mint: #a0f0dc;
+  --mint: #0f766e;
   --peach: #ffcba4;
-  --sky: #a5d8ff;
+  --sky: #0369a1;
 
   /* Chữ */
   --text-primary: #3a3352;
-  --text-secondary: #6e628f;
-  --text-muted: #958ba8;
+  --text-secondary: #574b75;
+  --text-muted: #72658e;
 
   /* Viền */
-  --border-soft: rgba(179, 157, 255, 0.2);
-  --border-strong: rgba(179, 157, 255, 0.4);
+  --border-soft: rgba(110, 72, 170, 0.15);
+  --border-strong: rgba(110, 72, 170, 0.35);
 
   /* Giấy (Paper themes) */
   --paper-dem-sao: #1b1436;
@@ -98,6 +98,10 @@
     color-scheme: dark;
     font-family: 'Nunito', sans-serif;
     line-height: 1.6;
+  }
+
+  html.light {
+    color-scheme: light;
   }
 
   body {

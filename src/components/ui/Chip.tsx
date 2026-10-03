@@ -15,7 +15,7 @@ export const Chip = React.memo(function Chip({
     <button
       type="button"
       className={cn(
-        'px-4 py-2.5 rounded-pill text-sm font-sans border transition-all duration-150 cursor-pointer text-left',
+        'px-4 py-2.5 rounded-pill text-sm font-sans border transition-all duration-150 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
         'hover:scale-[1.02] active:scale-[1.05] motion-reduce:hover:scale-100 motion-reduce:active:scale-100',
         active
           ? 'bg-lavender/15 border-lavender text-text-primary shadow-glow ring-1 ring-lavender/40'

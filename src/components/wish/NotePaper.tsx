@@ -108,7 +108,7 @@ export const NotePaper = forwardRef<HTMLDivElement, NotePaperProps>(
               maxLength={maxLength}
               rows={4}
               className={cn(
-                'w-full bg-transparent resize-none border-none outline-none font-note text-[26px] sm:text-[28px] leading-[1.5] text-text-primary placeholder:text-text-muted p-0 focus:ring-0 min-h-[160px] sm:min-h-[180px]',
+                'w-full bg-transparent resize-none border-none outline-none font-note text-[26px] sm:text-[28px] leading-[1.5] text-text-primary placeholder:text-text-muted p-0 focus:ring-0 focus-visible:ring-1 focus-visible:ring-lavender/30 rounded-lg min-h-[160px] sm:min-h-[180px]',
                 contentClassName
               )}
             />
