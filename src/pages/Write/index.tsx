@@ -154,6 +154,13 @@ export function Write() {
 
   // Step 3: Seal note
   const handleSealNote = () => {
+    // Haptic feedback (A5)
+    try {
+      navigator.vibrate?.(10);
+    } catch {
+      // safe fallback
+    }
+
     const activeUnlockAt = unlockAt || addMonths(new Date(), 1).getTime();
 
     const result = wishSchema.safeParse({
@@ -183,7 +190,12 @@ export function Write() {
     };
 
     // Save to localStorage
-    storage.addNote(newNote);
+    try {
+      storage.addNote(newNote);
+    } catch {
+      showToast('Không lưu được rồi, thử lại nha 🥲');
+      return;
+    }
 
     // Save note to sessionStorage for /viet/xong (Option A)
     sessionStorage.setItem(STORAGE_KEYS.LAST_SEALED, JSON.stringify(newNote));

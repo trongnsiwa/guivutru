@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react';
+import { shouldReduceMotion } from '@/lib/motion';
 
 export function useReducedMotion(): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-    return false;
-  });
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(shouldReduceMotion);
 
   useEffect(() => {
+    // If dev override param is present, short-circuit (no listener needed)
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const motion = params.get('motion');
+      if (motion === 'force' || motion === 'reduce') {
+        setPrefersReducedMotion(shouldReduceMotion());
+        return;
+      }
+    }
+
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     setPrefersReducedMotion(mediaQuery.matches);
 
@@ -22,3 +30,5 @@ export function useReducedMotion(): boolean {
 
   return prefersReducedMotion;
 }
+
+export default useReducedMotion;

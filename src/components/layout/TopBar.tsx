@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun, BookOpen, Info } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
+import { MeteorShower } from '@/components/fx/MeteorShower';
 import { cn } from '@/lib/cn';
 
 export interface TopBarProps {
@@ -12,6 +13,22 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
   const isToi = activePath === '/toi';
   const isAbout = activePath === '/gioi-thieu';
   const { toggleTheme, isDark } = useTheme();
+
+  const tapTimestampsRef = useRef<number[]>([]);
+  const [showMeteorShower, setShowMeteorShower] = useState(false);
+
+  const handleEasterEggTap = (e: React.MouseEvent) => {
+    const now = Date.now();
+    // Keep taps within last 3 seconds
+    tapTimestampsRef.current = tapTimestampsRef.current.filter((t) => now - t <= 3000);
+    tapTimestampsRef.current.push(now);
+
+    if (tapTimestampsRef.current.length >= 7) {
+      e.preventDefault();
+      tapTimestampsRef.current = [];
+      setShowMeteorShower(true);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-bg-deep/70 border-b border-border-soft/50">
@@ -73,6 +90,7 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
 
           <Link
             to="/gioi-thieu"
+            onClick={handleEasterEggTap}
             className={cn(
               'p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
               isAbout && 'text-lavender bg-bg-soft'
@@ -98,6 +116,10 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
           </button>
         </div>
       </div>
+
+      {showMeteorShower && (
+        <MeteorShower onComplete={() => setShowMeteorShower(false)} />
+      )}
     </header>
   );
 });

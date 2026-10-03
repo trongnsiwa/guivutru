@@ -1,15 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, List, Compass } from 'lucide-react';
 import { useNotes } from '@/hooks/useNotes';
+import { usePrefs } from '@/hooks/usePrefs';
 import { NoteCard } from '@/components/wish/NoteCard';
+import { ConstellationView } from '@/components/wish/ConstellationView';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Note } from '@/types/note';
+import { cn } from '@/lib/cn';
 
 export function MyCorner() {
   const notes = useNotes((s) => s.notes);
   const deleteNote = useNotes((s) => s.deleteNote);
+  const { prefs, updatePrefs } = usePrefs();
 
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
@@ -66,16 +70,70 @@ export function MyCorner() {
         </Link>
       </div>
 
-      {/* Empty State vs List */}
+      {/* View Switcher Chips (B1) */}
+      {notes.length > 0 && (
+        <div className="flex items-center justify-between gap-3 pt-0.5 pb-1">
+          <span className="font-sans text-xs text-text-muted">Chế độ xem:</span>
+          <div className="inline-flex items-center rounded-full p-0.5 bg-bg-soft/70 border border-border-soft">
+            <button
+              type="button"
+              onClick={() => updatePrefs({ toiView: 'list' })}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+                prefs.toiView === 'list'
+                  ? 'bg-lavender text-bg-deep font-semibold shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary'
+              )}
+              aria-pressed={prefs.toiView === 'list'}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span>Danh sách</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => updatePrefs({ toiView: 'sky' })}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+                prefs.toiView === 'sky'
+                  ? 'bg-lavender text-bg-deep font-semibold shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary'
+              )}
+              aria-pressed={prefs.toiView === 'sky'}
+            >
+              <Compass className="h-3.5 w-3.5" />
+              <span>Bầu trời ✨</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State vs View Switch */}
       {notes.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center text-center py-16 space-y-4">
-          <span className="text-5xl select-none">🥺</span>
+          <div className="relative w-[120px] h-[120px] flex items-center justify-center select-none" aria-hidden="true">
+            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="empty-sky" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="var(--sky)" stopOpacity="0.25" />
+                  <stop offset="60%" stopColor="var(--lavender)" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="var(--bg-deep)" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="60" cy="60" r="54" fill="url(#empty-sky)" />
+              {/* 4-point breathing pale star */}
+              <path
+                d="M 60 28 C 60 44 60 50 76 60 C 60 70 60 76 60 92 C 60 76 60 70 44 60 C 60 50 60 44 60 28 Z"
+                fill="var(--star)"
+                className="animate-star-breathe origin-center"
+              />
+            </svg>
+          </div>
           <div className="space-y-1">
             <p className="font-sans font-semibold text-lg text-text-primary">
-              Chưa có gì ở đây hết á 🥺
+              Chưa có điều ước nào ở đây cả ✨
             </p>
             <p className="font-sans text-xs sm:text-sm text-text-secondary">
-              Viết điều đầu tiên để gửi gắm vào vũ trụ nha?
+              Gửi một điều ước đầu tiên vào vũ trụ cùng mình nha?
             </p>
           </div>
           <Link to="/viet">
@@ -84,6 +142,8 @@ export function MyCorner() {
             </Button>
           </Link>
         </div>
+      ) : prefs.toiView === 'sky' ? (
+        <ConstellationView notes={notes} />
       ) : (
         <div className="space-y-3">
           {notes.map((note) => (
@@ -100,7 +160,7 @@ export function MyCorner() {
       >
         <div className="space-y-4">
           <p className="font-sans text-sm text-text-secondary leading-relaxed">
-            Bạn có chắc muốn xoá điều ước này không? Vũ trụ sẽ không còn giữ điều ước này giúp bạn nữa nha.
+            Vũ trụ sẽ không còn giữ điều ước này giúp bạn nữa, mình có chắc muốn xoá không?
           </p>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-soft/40">

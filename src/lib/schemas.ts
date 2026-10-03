@@ -50,7 +50,7 @@ export const wishSchema = z.object({
     }),
   unlockAt: z
     .number({
-      required_error: 'Vui lòng chọn ngày mở điều ước nha 🌙',
+      required_error: 'Chọn ngày mở điều ước cùng mình nha 🌙',
       invalid_type_error: 'Ngày mở không hợp lệ',
     })
     .refine((val) => val >= minUnlockTimestamp(), {

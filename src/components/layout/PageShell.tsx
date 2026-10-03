@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { TopBar } from './TopBar';
 import { Footer } from './Footer';
 import { StarField } from '@/components/fx/StarField';
-import { FloatingBlobs } from '@/components/fx/FloatingBlobs';
 import { NoiseOverlay } from '@/components/fx/NoiseOverlay';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -15,7 +14,6 @@ export function PageShell() {
     <div className="relative flex min-h-screen flex-col bg-bg-deep text-text-primary selection:bg-lavender selection:text-bg-deep">
       {/* Background FX - Persists across routes */}
       <StarField />
-      <FloatingBlobs />
       <NoiseOverlay />
 
       {/* Navigation */}

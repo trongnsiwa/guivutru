@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { MockNoteStack } from '@/components/wish/MockNoteStack';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useNotes } from '@/hooks/useNotes';
+import { Note } from '@/types/note';
+import { cn } from '@/lib/cn';
 
 function LandingComponent() {
   const prefersReducedMotion = useReducedMotion();
@@ -31,6 +34,37 @@ function LandingComponent() {
       return () => clearTimeout(timer);
     }
   }, [toastVisible]);
+
+  const notes = useNotes((s) => s.notes);
+
+  // B3: "Ngày này năm xưa" nostalgia match from a prior year
+  const priorYearMatch = useMemo(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentDate = today.getDate();
+    const currentYear = today.getFullYear();
+
+    const matches: Array<{ note: Note; yearsAgo: number }> = [];
+
+    for (const note of notes) {
+      if (!note.createdAt) continue;
+      const d = new Date(note.createdAt);
+      if (
+        d.getFullYear() < currentYear &&
+        d.getMonth() === currentMonth &&
+        d.getDate() === currentDate
+      ) {
+        matches.push({
+          note,
+          yearsAgo: currentYear - d.getFullYear(),
+        });
+      }
+    }
+
+    if (matches.length === 0) return null;
+    matches.sort((a, b) => (a.note.createdAt || 0) - (b.note.createdAt || 0));
+    return matches[0];
+  }, [notes]);
 
   return (
     <div className="flex flex-1 flex-col items-center text-center w-full pt-[48px]">
@@ -100,6 +134,27 @@ function LandingComponent() {
       <div className="mt-[64px] w-full">
         <MockNoteStack />
       </div>
+
+      {/* B3: "Ngày này năm xưa" nostalgia strip (rendered only when prior-year note exists) */}
+      {priorYearMatch && (
+        <Link
+          to={`/note/${priorYearMatch.note.id}`}
+          className={cn(
+            'w-full max-w-xs mt-10 -mb-4 p-3.5 rounded-2xl bg-bg-soft/80 hover:bg-bg-elevated/90 border border-border-soft border-l-[3px] border-l-lavender shadow-sm flex items-center justify-between gap-3 text-left transition-all hover:scale-[1.01] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+            prefersReducedMotion ? '' : 'animate-fade-in'
+          )}
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="text-base select-none">🌙</span>
+            <span className="font-sans text-[15px] text-text-primary group-hover:text-lavender transition-colors">
+              {priorYearMatch.yearsAgo} năm trước, bạn đã gửi một điều ước.
+            </span>
+          </div>
+          <span className="text-xs text-text-muted group-hover:text-text-secondary transition-colors shrink-0">
+            Xem lại →
+          </span>
+        </Link>
+      )}
 
       {/* 3-Step Section: 80px mobile / 120px desktop gap from MockNoteStack, 96px gap to footer */}
       <div

@@ -5,9 +5,27 @@ interface StarFieldProps {
   total?: number;
 }
 
-const STRIDE = 8; // x, y, size, duration, delay, minOp, maxOp, hasGlow
+// 8 floats per star:
+// 0: x ratio (0..1)
+// 1: y ratio (0..1)
+// 2: size (px)
+// 3: twinkle duration (sec)
+// 4: twinkle delay (sec)
+// 5: layer (0 = far, 1 = mid, 2 = near)
+// 6: color type (0 = white, 1 = warm #FFE9A8, 2 = cool #A5D8FF)
+// 7: base opacity (0..1)
+const STRIDE = 8;
 
-function StarFieldComponent({ total = 120 }: StarFieldProps) {
+interface ShootingStar {
+  startX: number;
+  startY: number;
+  length: number;
+  angle: number;
+  duration: number;
+  startTime: number;
+}
+
+function StarFieldComponent({ total = 140 }: StarFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -18,57 +36,122 @@ function StarFieldComponent({ total = 120 }: StarFieldProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Precompute star positions once into a Float32Array
+    // Check light mode
+    const isLightMode = document.documentElement.classList.contains('light');
+
+    // Counts per layer
+    const countFar = Math.round(total * 0.6); // 60%
+    const countMid = Math.round(total * 0.3); // 30%
+    const countNear = total - countFar - countMid; // 10%
+
     const starsData = new Float32Array(total * STRIDE);
-    const countLayer1 = Math.round(total * 0.6); // 60%
-    const countLayer2 = Math.round(total * 0.3); // 30%
-    const countLayer3 = total - countLayer1 - countLayer2; // 10%
+    let idx = 0;
 
-    let starIdx = 0;
+    // Helper to pick color: ~85% white, 8% warm, 7% cool
+    const pickColor = () => {
+      const r = Math.random();
+      if (r < 0.85) return 0; // white
+      if (r < 0.93) return 1; // warm #FFE9A8
+      return 2; // cool #A5D8FF
+    };
 
-    // Layer 1: 1px, opacity 0.3, twinkle 2s
-    for (let i = 0; i < countLayer1; i++) {
-      const offset = starIdx++ * STRIDE;
-      starsData[offset] = Math.random(); // x ratio
-      starsData[offset + 1] = Math.random(); // y ratio
-      starsData[offset + 2] = 1; // size
-      starsData[offset + 3] = 2; // duration
-      starsData[offset + 4] = Math.random() * 2; // delay
-      starsData[offset + 5] = 0.1; // minOp
-      starsData[offset + 6] = 0.4; // maxOp
-      starsData[offset + 7] = 0; // hasGlow: false
-    }
-
-    // Layer 2: 1.5px, opacity 0.6, twinkle 3s
-    for (let i = 0; i < countLayer2; i++) {
-      const offset = starIdx++ * STRIDE;
+    // Layer 0: Far (60%, 0.6–1px)
+    for (let i = 0; i < countFar; i++) {
+      const offset = idx++ * STRIDE;
       starsData[offset] = Math.random();
       starsData[offset + 1] = Math.random();
-      starsData[offset + 2] = 1.5;
-      starsData[offset + 3] = 3;
+      starsData[offset + 2] = 0.6 + Math.random() * 0.4; // 0.6-1.0px
+      starsData[offset + 3] = 2.5 + Math.random() * 2;
       starsData[offset + 4] = Math.random() * 3;
-      starsData[offset + 5] = 0.25;
-      starsData[offset + 6] = 0.7;
-      starsData[offset + 7] = 0;
+      starsData[offset + 5] = 0; // layer 0 (far)
+      starsData[offset + 6] = pickColor();
+      starsData[offset + 7] = 0.2 + Math.random() * 0.3;
     }
 
-    // Layer 3: 2px, opacity 0.9, glow, twinkle 4s
-    for (let i = 0; i < countLayer3; i++) {
-      const offset = starIdx++ * STRIDE;
+    // Layer 1: Mid (30%, 1–1.5px)
+    for (let i = 0; i < countMid; i++) {
+      const offset = idx++ * STRIDE;
       starsData[offset] = Math.random();
       starsData[offset + 1] = Math.random();
-      starsData[offset + 2] = 2;
-      starsData[offset + 3] = 4;
-      starsData[offset + 4] = Math.random() * 4;
-      starsData[offset + 5] = 0.4;
-      starsData[offset + 6] = 1.0;
-      starsData[offset + 7] = 1; // hasGlow: true
+      starsData[offset + 2] = 1.0 + Math.random() * 0.5; // 1.0-1.5px
+      starsData[offset + 3] = 3 + Math.random() * 2;
+      starsData[offset + 4] = Math.random() * 3;
+      starsData[offset + 5] = 1; // layer 1 (mid)
+      starsData[offset + 6] = pickColor();
+      starsData[offset + 7] = 0.4 + Math.random() * 0.35;
+    }
+
+    // Layer 2: Near (10%, 1.5–2.5px)
+    for (let i = 0; i < countNear; i++) {
+      const offset = idx++ * STRIDE;
+      starsData[offset] = Math.random();
+      starsData[offset + 1] = Math.random();
+      starsData[offset + 2] = 1.5 + Math.random() * 1.0; // 1.5-2.5px
+      starsData[offset + 3] = 3.5 + Math.random() * 2;
+      starsData[offset + 4] = Math.random() * 3;
+      starsData[offset + 5] = 2; // layer 2 (near)
+      starsData[offset + 6] = pickColor();
+      starsData[offset + 7] = 0.6 + Math.random() * 0.4;
+    }
+
+    // Drift velocities (per frame normalized, differing directions to create depth)
+    // Far layer: drift ~0.02px/frame
+    const driftFarX = 0.000015;
+    const driftFarY = -0.000012;
+    // Mid layer: drift ~0.05px/frame
+    const driftMidX = 0.000035;
+    const driftMidY = -0.000028;
+    // Near layer: drift ~0.12px/frame
+    const driftNearX = 0.000075;
+    const driftNearY = -0.000045;
+
+    // Offscreen Nebula Canvas (painted once at low res, blitted each frame with slow drift)
+    const nebulaCanvas = document.createElement('canvas');
+    const nebulaCtx = nebulaCanvas.getContext('2d');
+    const NEBULA_SIZE = 320;
+    nebulaCanvas.width = NEBULA_SIZE;
+    nebulaCanvas.height = NEBULA_SIZE;
+
+    if (nebulaCtx && !isLightMode) {
+      // Soft lavender gradient (upper-left)
+      const grad1 = nebulaCtx.createRadialGradient(
+        NEBULA_SIZE * 0.3,
+        NEBULA_SIZE * 0.3,
+        0,
+        NEBULA_SIZE * 0.3,
+        NEBULA_SIZE * 0.3,
+        NEBULA_SIZE * 0.55
+      );
+      grad1.addColorStop(0, 'rgba(167, 139, 250, 0.16)');
+      grad1.addColorStop(0.5, 'rgba(139, 92, 246, 0.08)');
+      grad1.addColorStop(1, 'rgba(139, 92, 246, 0)');
+      nebulaCtx.fillStyle = grad1;
+      nebulaCtx.fillRect(0, 0, NEBULA_SIZE, NEBULA_SIZE);
+
+      // Soft pink/peach gradient (lower-right)
+      const grad2 = nebulaCtx.createRadialGradient(
+        NEBULA_SIZE * 0.72,
+        NEBULA_SIZE * 0.72,
+        0,
+        NEBULA_SIZE * 0.72,
+        NEBULA_SIZE * 0.72,
+        NEBULA_SIZE * 0.5
+      );
+      grad2.addColorStop(0, 'rgba(255, 179, 209, 0.14)');
+      grad2.addColorStop(0.5, 'rgba(255, 203, 164, 0.06)');
+      grad2.addColorStop(1, 'rgba(255, 179, 209, 0)');
+      nebulaCtx.fillStyle = grad2;
+      nebulaCtx.fillRect(0, 0, NEBULA_SIZE, NEBULA_SIZE);
     }
 
     let animId = 0;
     let width = 0;
     let height = 0;
     let dpr = 1;
+
+    // Shooting stars state (1–3 per 60s)
+    let nextShootingStarTime = performance.now() + 15000 + Math.random() * 20000;
+    let activeShootingStar: ShootingStar | null = null;
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -84,70 +167,132 @@ function StarFieldComponent({ total = 120 }: StarFieldProps) {
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
+    // Draw frame
     const drawFrame = (timeMs: number) => {
       ctx.clearRect(0, 0, width, height);
-      const timeSec = timeMs / 1000;
 
-      // Group 1: Non-glowing stars
-      ctx.fillStyle = '#E6D7FF';
-      for (let i = 0; i < total; i++) {
-        const offset = i * STRIDE;
-        if (starsData[offset + 7] > 0.5) continue; // Skip glow stars
-
-        const x = starsData[offset] * width;
-        const y = starsData[offset + 1] * height;
-        const size = starsData[offset + 2];
-        const dur = starsData[offset + 3];
-        const delay = starsData[offset + 4];
-        const minOp = starsData[offset + 5];
-        const maxOp = starsData[offset + 6];
-
-        let op: number;
-        if (prefersReducedMotion) {
-          op = (minOp + maxOp) * 0.5;
-        } else {
-          const phase = ((timeSec + delay) % dur) / dur;
-          const sine = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2);
-          op = minOp + (maxOp - minOp) * sine;
-        }
-
-        ctx.globalAlpha = op;
-        ctx.beginPath();
-        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
-        ctx.fill();
+      // 1. Draw Nebula (Dark mode only, slow drift)
+      if (!isLightMode && !prefersReducedMotion && nebulaCanvas.width > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(
+          nebulaCanvas,
+          -40 + Math.sin(timeMs * 0.0001) * 30,
+          -40 + Math.cos(timeMs * 0.0001) * 20,
+          width * 1.1,
+          height * 1.1
+        );
+        ctx.restore();
       }
 
-      // Group 2: Glowing stars (Layer 3)
+      // 2. Stars: Colors
+      const WHITE = isLightMode ? '#72658E' : '#FFFFFF';
+      const WARM = isLightMode ? '#9E7250' : '#FFE9A8';
+      const COOL = isLightMode ? '#3C7099' : '#A5D8FF';
+
+      const timeSec = timeMs / 1000;
+
       for (let i = 0; i < total; i++) {
         const offset = i * STRIDE;
-        if (starsData[offset + 7] <= 0.5) continue;
+
+        // Update drift if motion is enabled and in dark mode
+        if (!prefersReducedMotion && !isLightMode) {
+          const layer = starsData[offset + 5];
+          if (layer === 0) {
+            starsData[offset] = (starsData[offset] + driftFarX) % 1;
+            starsData[offset + 1] = (starsData[offset + 1] + driftFarY + 1) % 1;
+          } else if (layer === 1) {
+            starsData[offset] = (starsData[offset] + driftMidX) % 1;
+            starsData[offset + 1] = (starsData[offset + 1] + driftMidY + 1) % 1;
+          } else {
+            starsData[offset] = (starsData[offset] + driftNearX) % 1;
+            starsData[offset + 1] = (starsData[offset + 1] + driftNearY + 1) % 1;
+          }
+        }
 
         const x = starsData[offset] * width;
         const y = starsData[offset + 1] * height;
         const size = starsData[offset + 2];
         const dur = starsData[offset + 3];
         const delay = starsData[offset + 4];
-        const minOp = starsData[offset + 5];
-        const maxOp = starsData[offset + 6];
+        const layer = starsData[offset + 5];
+        const colorType = starsData[offset + 6];
+        const baseOp = starsData[offset + 7];
 
         let op: number;
-        if (prefersReducedMotion) {
-          op = (minOp + maxOp) * 0.5;
+        if (prefersReducedMotion || isLightMode) {
+          op = isLightMode ? baseOp * 0.45 : baseOp;
         } else {
           const phase = ((timeSec + delay) % dur) / dur;
           const sine = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2);
-          op = minOp + (maxOp - minOp) * sine;
+          op = baseOp * (0.6 + 0.4 * sine);
         }
 
-        ctx.save();
-        ctx.shadowColor = 'rgba(230, 215, 255, 0.7)';
-        ctx.shadowBlur = 6;
-        ctx.globalAlpha = op;
-        ctx.fillStyle = '#E6D7FF';
-        ctx.beginPath();
-        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.fillStyle = colorType === 0 ? WHITE : colorType === 1 ? WARM : COOL;
+        ctx.globalAlpha = Math.min(1, Math.max(0, op));
+
+        // Subtle glow for near stars in dark mode
+        if (layer === 2 && !isLightMode && !prefersReducedMotion) {
+          ctx.save();
+          ctx.shadowColor = 'rgba(230, 215, 255, 0.6)';
+          ctx.shadowBlur = 4;
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 3. Rare Shooting Stars (1–3 per 60s, dark mode only, non-reduced motion)
+      if (!isLightMode && !prefersReducedMotion) {
+        if (!activeShootingStar && timeMs >= nextShootingStarTime) {
+          // Spawn shooting star
+          const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.3; // ~45 degrees diagonal
+          activeShootingStar = {
+            startX: Math.random() * width * 0.75,
+            startY: Math.random() * height * 0.35,
+            length: 70 + Math.random() * 50, // 70-120px
+            angle,
+            duration: 450 + Math.random() * 250, // 450-700ms
+            startTime: timeMs,
+          };
+          nextShootingStarTime = timeMs + 20000 + Math.random() * 25000;
+        }
+
+        if (activeShootingStar) {
+          const elapsed = timeMs - activeShootingStar.startTime;
+          const progress = elapsed / activeShootingStar.duration;
+
+          if (progress >= 1) {
+            activeShootingStar = null;
+          } else {
+            const currentDist = progress * 300;
+            const headX = activeShootingStar.startX + Math.cos(activeShootingStar.angle) * currentDist;
+            const headY = activeShootingStar.startY + Math.sin(activeShootingStar.angle) * currentDist;
+            const tailX = headX - Math.cos(activeShootingStar.angle) * activeShootingStar.length;
+            const tailY = headY - Math.sin(activeShootingStar.angle) * activeShootingStar.length;
+
+            const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
+            const fade = Math.sin(progress * Math.PI); // fade in and out smoothly
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+            grad.addColorStop(0.7, `rgba(201, 182, 255, ${0.4 * fade})`);
+            grad.addColorStop(1, `rgba(255, 255, 255, ${0.85 * fade})`);
+
+            ctx.save();
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.lineTo(headX, headY);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
       }
     };
 
@@ -156,20 +301,20 @@ function StarFieldComponent({ total = 120 }: StarFieldProps) {
       animId = requestAnimationFrame(loop);
     };
 
-    if (prefersReducedMotion) {
+    if (prefersReducedMotion || isLightMode) {
       drawFrame(0);
     } else {
       animId = requestAnimationFrame(loop);
     }
 
-    // Page Visibility API to pause loop when backgrounded
+    // Page Visibility API to pause when hidden
     const handleVisibilityChange = () => {
       if (document.hidden) {
         if (animId) {
           cancelAnimationFrame(animId);
           animId = 0;
         }
-      } else if (!prefersReducedMotion && !animId) {
+      } else if (!prefersReducedMotion && !isLightMode && !animId) {
         animId = requestAnimationFrame(loop);
       }
     };

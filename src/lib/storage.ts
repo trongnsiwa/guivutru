@@ -19,6 +19,7 @@ export const storage = {
       localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
     } catch (err) {
       console.error('Failed to save notes to localStorage:', err);
+      throw err;
     }
   },
 

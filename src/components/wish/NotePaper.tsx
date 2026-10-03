@@ -1,6 +1,7 @@
 import { forwardRef, HTMLAttributes } from 'react';
 import { PaperTheme } from '@/types/note';
 import { cn } from '@/lib/cn';
+import { getNoteTimeMetadata } from '@/lib/date';
 
 export interface NotePaperProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   paperTheme?: PaperTheme;
@@ -11,6 +12,7 @@ export interface NotePaperProps extends Omit<HTMLAttributes<HTMLDivElement>, 'on
   placeholder?: string;
   isSealed?: boolean;
   showFooter?: boolean;
+  createdAt?: number;
   maxLines?: number;
   mode?: 'edit' | 'preview';
   onContentChange?: (val: string) => void;
@@ -41,6 +43,7 @@ export const NotePaper = forwardRef<HTMLDivElement, NotePaperProps>(
       placeholder = 'Vũ trụ đang chờ nghe bạn nói…',
       isSealed = false,
       showFooter = false,
+      createdAt,
       maxLines,
       mode = 'preview',
       onContentChange,
@@ -56,6 +59,8 @@ export const NotePaper = forwardRef<HTMLDivElement, NotePaperProps>(
   ) => {
     const activeTheme = paperTheme || theme || 'dem-sao';
     const activeStickers = stickerIds || stickers;
+    const noteCreatedAt = createdAt || Date.now();
+    const { glyph, timeStr } = getNoteTimeMetadata(noteCreatedAt);
     return (
       <div
         ref={ref}
@@ -130,8 +135,11 @@ export const NotePaper = forwardRef<HTMLDivElement, NotePaperProps>(
         {/* Paper footer mark */}
         {showFooter && (
           <div className="relative z-10 mt-3 flex items-center justify-between text-xs text-text-muted font-sans border-t border-border-soft/30 pt-2">
+            <span className="flex items-center gap-1.5">
+              <span className="select-none">{glyph}</span>
+              <span>{timeStr}</span>
+            </span>
             <span>Gửi Vũ Trụ ✨</span>
-            <span>guivutru.pages.dev</span>
           </div>
         )}
       </div>

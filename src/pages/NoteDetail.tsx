@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
 import { exportAndShareCard } from '@/lib/share';
+import { STORAGE_KEYS } from '@/lib/constants';
+import { UnlockSequence } from './NoteDetail/UnlockSequence';
 
 export function NoteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +31,12 @@ export function NoteDetail() {
   const shareCardRef = useRef<HTMLDivElement>(null);
   const hasAutoOpenedRef = useRef(false);
 
+  // First-visit unlock check (note was sealed and unlockAt has passed)
+  const isFirstVisitUnlockRef = useRef(
+    note ? note.status === 'sealed' && Date.now() >= note.unlockAt : false
+  );
+  const [isUnlocking, setIsUnlocking] = useState(isFirstVisitUnlockRef.current);
+
   // Transition to opened state if unlock date has passed and still sealed (once on mount)
   useEffect(() => {
     if (
@@ -38,7 +46,19 @@ export function NoteDetail() {
       !hasAutoOpenedRef.current
     ) {
       hasAutoOpenedRef.current = true;
+      console.log('[NoteDetail] Unlocking note once:', note.id);
       openNote(note.id);
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.VIEWED_UNLOCKS);
+        const viewed: string[] = raw ? JSON.parse(raw) : [];
+        if (!viewed.includes(note.id)) {
+          viewed.push(note.id);
+          localStorage.setItem(STORAGE_KEYS.VIEWED_UNLOCKS, JSON.stringify(viewed));
+        }
+      } catch {
+        // safe fallback
+      }
     }
   }, [note, openNote]);
 
@@ -54,6 +74,17 @@ export function NoteDetail() {
         <Button variant="ghost" onClick={() => navigate('/toi')}>
           ← Quay lại góc của tôi
         </Button>
+      </div>
+    );
+  }
+
+  if (isUnlocking) {
+    return (
+      <div className="flex flex-1 flex-col py-2 space-y-6">
+        <UnlockSequence
+          note={note}
+          onComplete={() => setIsUnlocking(false)}
+        />
       </div>
     );
   }

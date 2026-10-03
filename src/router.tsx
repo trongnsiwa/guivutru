@@ -15,7 +15,15 @@ const DevSealedSuccess = lazy(() => import('@/pages/DevSealedSuccess'));
 
 function withSuspense(Component: React.ComponentType) {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center py-16" aria-live="polite">
+          <p className="font-display text-2xl text-star-glow animate-pulse">
+            Chờ vũ trụ một chút nha…
+          </p>
+        </div>
+      }
+    >
       <Component />
     </Suspense>
   );

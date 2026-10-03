@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { Note } from '@/types/note';
 import { PAPER_THEMES } from '@/lib/constants';
-import { formatDate } from '@/lib/date';
+import { formatDate, getNoteTimeMetadata } from '@/lib/date';
 import { cn } from '@/lib/cn';
 
 export interface ShareCardProps {
@@ -86,14 +86,33 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
         )}
       </div>
 
-      {/* Bottom 120px: Date & watermark */}
-      <div className="pb-[120px] flex flex-col items-center justify-center gap-3 z-10">
-        <p className="font-sans font-semibold text-[28px] text-text-primary">
-          Niêm phong ngày {formatDate(note.createdAt)}
-        </p>
-        <p className="font-sans font-normal text-[24px] text-text-muted">
-          guivutru.pages.dev
-        </p>
+      {/* Bottom 120px: Date & watermark (left), QR code & label (right) */}
+      <div className="w-full px-[120px] pb-[120px] flex items-end justify-between z-10 text-left">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-sans font-semibold text-[28px] text-text-primary flex items-center gap-2.5">
+            <span>{getNoteTimeMetadata(note.createdAt).glyph}</span>
+            <span>Niêm phong ngày {formatDate(note.createdAt)}</span>
+          </p>
+          <p className="font-sans font-normal text-[24px] text-text-muted">
+            guivutru.pages.dev
+          </p>
+        </div>
+
+        {/* B2: QR Code in bottom-right (140x140 at 1080x1920) */}
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="w-[140px] h-[140px] p-2.5 rounded-2xl bg-bg-soft/80 border border-border-soft flex items-center justify-center shadow-sm">
+            <img
+              src="/qr-guivutru.svg"
+              alt="Mã QR gửi điều ước"
+              width={120}
+              height={120}
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <span className="font-sans text-[22px] text-text-muted whitespace-nowrap">
+            quét để gửi điều ước của bạn
+          </span>
+        </div>
       </div>
     </div>
   );

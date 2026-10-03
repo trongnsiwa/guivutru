@@ -1,3 +1,5 @@
+import { shouldReduceMotion } from '@/lib/motion';
+
 const CONFETTI_PALETTE = [
   '#C9B6FF',
   '#FFB3D1',
@@ -7,10 +9,12 @@ const CONFETTI_PALETTE = [
   '#FFF9E6',
 ];
 
-export async function firePastelConfetti(reducedMotion = false) {
-  if (reducedMotion) return;
+export async function firePastelConfetti(reducedMotion?: boolean) {
+  const isReduced = reducedMotion ?? shouldReduceMotion();
+  if (isReduced) return;
 
   const { default: confetti } = await import('canvas-confetti');
+  const disableForReducedMotion = shouldReduceMotion();
 
   // Burst 1 (left-center)
   confetti({
@@ -19,7 +23,7 @@ export async function firePastelConfetti(reducedMotion = false) {
     startVelocity: 45,
     origin: { x: 0.45, y: 0.3 },
     colors: CONFETTI_PALETTE,
-    disableForReducedMotion: true,
+    disableForReducedMotion,
   });
 
   // Burst 2 (right-center, 150ms apart)
@@ -30,7 +34,7 @@ export async function firePastelConfetti(reducedMotion = false) {
       startVelocity: 45,
       origin: { x: 0.55, y: 0.3 },
       colors: CONFETTI_PALETTE,
-      disableForReducedMotion: true,
+      disableForReducedMotion,
     });
   }, 150);
 }
