@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/assets/*",
+    "/favicon.svg",
+    "/og-image.png",
+    "/qr-guivutru.svg",
+    "/star-field.svg",
+    "/mock-notes/*"
+  ]
+}
