@@ -123,7 +123,7 @@ export function DevFonts() {
             <div>
               <span className="text-[10px] font-mono text-text-muted block mb-0.5">22px (Standard Note Content):</span>
               <p className="font-note font-normal text-[22px] leading-[1.5] text-text-primary">
-                "Mình muốn đến Đà Lạt và ở đó mãi mãi…" 🌸
+                "Năm sau, mình sẽ đi Đà Lạt một mình." 🌸
               </p>
             </div>
 

@@ -46,6 +46,8 @@ export const STORAGE_KEYS = {
   NOTES: 'gvt.notes',
   VERSION: 'gvt.version',
   THEME: 'gvt.theme',
+  WRITE: 'gvt.write',
+  LAST_SEALED: 'gvt.lastSealed',
 } as const;
 
 export const DEFAULT_EASING = [0.22, 1, 0.36, 1];

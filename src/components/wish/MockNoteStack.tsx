@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
+import React from 'react';
 import { NotePaper } from './NotePaper';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-export function MockNoteStack() {
+function MockNoteStackComponent() {
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -37,7 +37,7 @@ export function MockNoteStack() {
         aria-hidden="true"
       >
         <NotePaper
-          content="Năm sau, mình sẽ học giỏi hơn."
+          content="Mình muốn một ngày nào đó được sống chậm lại."
           stickers={['⭐']}
           showFooter={false}
           maxLines={2}
@@ -47,34 +47,20 @@ export function MockNoteStack() {
         />
       </div>
 
-      {/* Card 1 (Front, fully readable, visual anchor, floats) */}
-      <motion.div
+      {/* Card 1 (Front, fully readable, visual anchor, floats via CSS on compositor) */}
+      <div
         className="absolute inset-x-0 h-[155px] sm:h-[165px]"
         style={{
           top: 0,
           left: 0,
           transform: 'rotate(1deg)',
           zIndex: 30,
+          willChange: prefersReducedMotion ? undefined : 'transform',
+          animation: prefersReducedMotion ? undefined : 'float-gentle 4s ease-in-out infinite',
         }}
-        animate={
-          prefersReducedMotion
-            ? { y: 0 }
-            : {
-                y: [0, -6, 0],
-              }
-        }
-        transition={
-          prefersReducedMotion
-            ? undefined
-            : {
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }
-        }
       >
         <NotePaper
-          content="Mình muốn đến Đà Lạt và ở đó mãi mãi…"
+          content="Năm sau, mình sẽ đi Đà Lạt một mình."
           stickers={['🌸']}
           showFooter={false}
           maxLines={2}
@@ -82,9 +68,10 @@ export function MockNoteStack() {
           stickerClassName="text-[28px]"
           className="h-full min-h-0 bg-bg-soft border border-border-soft rounded-lg shadow-dark py-[32px] px-[28px]"
         />
-      </motion.div>
+      </div>
     </div>
   );
 }
 
+export const MockNoteStack = React.memo(MockNoteStackComponent);
 export default MockNoteStack;

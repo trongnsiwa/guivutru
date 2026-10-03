@@ -5,11 +5,12 @@ import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { addMonths } from 'date-fns';
 import { nanoid } from 'nanoid';
 
+import { useShallow } from 'zustand/shallow';
 import { useWriteStore } from '@/store/useWriteStore';
 import { storage } from '@/lib/storage';
 import { Note } from '@/types/note';
 import { step2ContentSchema, wishSchema } from '@/lib/schemas';
-import { DEFAULT_EASING, PromptOption } from '@/lib/constants';
+import { PromptOption, STORAGE_KEYS } from '@/lib/constants';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 import { ProgressDots } from '@/components/ui/ProgressDots';
@@ -25,7 +26,7 @@ export function Write() {
   const [searchParams] = useSearchParams();
   const prefersReducedMotion = useReducedMotion();
 
-  // Zustand persistent store
+  // Zustand persistent store with shallow selector
   const {
     step,
     content,
@@ -34,6 +35,7 @@ export function Write() {
     paperTheme,
     stickerIds,
     unlockAt,
+    sessionActive,
     setStep,
     setContent,
     setPromptId,
@@ -41,11 +43,29 @@ export function Write() {
     setPaperTheme,
     setStickerIds,
     setUnlockAt,
+    setSessionActive,
     reset,
-  } = useWriteStore();
-
-  // Animation direction: +1 = forward (slide left), -1 = backward (slide right)
-  const [direction, setDirection] = useState<number>(1);
+  } = useWriteStore(
+    useShallow((s) => ({
+      step: s.step,
+      content: s.content,
+      promptId: s.promptId,
+      promptChosen: s.promptChosen,
+      paperTheme: s.paperTheme,
+      stickerIds: s.stickerIds,
+      unlockAt: s.unlockAt,
+      sessionActive: s.sessionActive,
+      setStep: s.setStep,
+      setContent: s.setContent,
+      setPromptId: s.setPromptId,
+      setPromptChosen: s.setPromptChosen,
+      setPaperTheme: s.setPaperTheme,
+      setStickerIds: s.setStickerIds,
+      setUnlockAt: s.setUnlockAt,
+      setSessionActive: s.setSessionActive,
+      reset: s.reset,
+    }))
+  );
 
   // Toast state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -56,39 +76,46 @@ export function Write() {
     setToastVisible(true);
   };
 
-  // Ensure default unlock date (1 month from now) if null
-  useEffect(() => {
-    if (!unlockAt) {
-      setUnlockAt(addMonths(new Date(), 1).getTime());
-    }
-  }, [unlockAt, setUnlockAt]);
+  const queryStep = searchParams.get('step');
+  const currentStep = queryStep === '2' ? 2 : queryStep === '3' ? 3 : step;
 
-  // Support direct step testing via query param (e.g. /viet?step=2)
+  // Mount detection logic:
+  // If sessionActive is false OR store has no meaningful content, reset to full defaults only if dirty.
   useEffect(() => {
-    const qStep = searchParams.get('step');
-    if (qStep === '2') {
-      setPromptChosen(true);
-      if (!content) setContent('Mình muốn đến Đà Lạt và ở đó mãi mãi…');
-      setStep(2);
+    if (queryStep) return;
+    const hasMeaningfulContent = Boolean(content.trim() || promptId || promptChosen);
+    if (!sessionActive || !hasMeaningfulContent) {
+      if (sessionActive || content || promptId || promptChosen || step !== 1) {
+        reset();
+      }
     }
-  }, [searchParams, content, setPromptChosen, setContent, setStep]);
+  }, []); // Run on mount only
 
   // Route guards
   useEffect(() => {
+    if (queryStep) return;
     // If on Step 2 without a chosen prompt, redirect to Step 1
     if (step === 2 && !promptChosen) {
-      setDirection(-1);
       setStep(1);
-    }
-    // If on Step 3 with invalid content (< 5 chars), redirect to Step 2
-    if (step === 3 && content.trim().length < 5) {
-      setDirection(-1);
+    } else if (step === 3 && content.trim().length < 5) {
+      // If on Step 3 with invalid content (< 5 chars), redirect to Step 2
       setStep(2);
     }
-  }, [step, promptChosen, content, setStep]);
+  }, [queryStep, step, promptChosen, content, setStep]);
+
+  // Support direct step testing via query param (e.g. /viet?step=2)
+  useEffect(() => {
+    if (queryStep === '2' && (step !== 2 || !sessionActive || !promptChosen)) {
+      setSessionActive(true);
+      setPromptChosen(true);
+      if (!content) setContent('');
+      setStep(2);
+    }
+  }, [queryStep, step, content, sessionActive, promptChosen, setSessionActive, setPromptChosen, setContent, setStep]);
 
   // Handle Step 1 prompt selection
   const handleSelectPrompt = (option: PromptOption) => {
+    setSessionActive(true);
     setPromptChosen(true);
     if (option.id === 'custom') {
       setPromptId(null);
@@ -97,8 +124,15 @@ export function Write() {
       setPromptId(option.id);
       setContent(option.template);
     }
-    setDirection(1);
     setStep(2);
+  };
+
+  // Step 2 content change (sets sessionActive=true on first keystroke)
+  const handleContentChange = (val: string) => {
+    if (!sessionActive) {
+      setSessionActive(true);
+    }
+    setContent(val);
   };
 
   // Step 2 -> Step 3
@@ -115,7 +149,6 @@ export function Write() {
       return;
     }
 
-    setDirection(1);
     setStep(3);
   };
 
@@ -152,7 +185,10 @@ export function Write() {
     // Save to localStorage
     storage.addNote(newNote);
 
-    // Reset store
+    // Save note to sessionStorage for /viet/xong (Option A)
+    sessionStorage.setItem(STORAGE_KEYS.LAST_SEALED, JSON.stringify(newNote));
+
+    // Reset store before navigating to /viet/xong
     reset();
 
     // Navigate to completion
@@ -162,10 +198,8 @@ export function Write() {
   // Back button
   const handleBack = () => {
     if (step === 2) {
-      setDirection(-1);
       setStep(1);
     } else if (step === 3) {
-      setDirection(-1);
       setStep(2);
     } else {
       navigate('/');
@@ -175,24 +209,20 @@ export function Write() {
   // Restart / Reset
   const handleRestart = () => {
     reset();
-    setDirection(-1);
     setStep(1);
   };
 
-  // Animation variants
-  const slideVariants = {
-    enter: (dir: number) => ({
-      x: prefersReducedMotion ? 0 : dir > 0 ? 32 : -32,
+  // Animation variants: within-step transitions are opacity-only, 150ms
+  const stepVariants = {
+    enter: {
       opacity: 0,
-    }),
+    },
     center: {
-      x: 0,
       opacity: 1,
     },
-    exit: (dir: number) => ({
-      x: prefersReducedMotion ? 0 : dir > 0 ? -32 : 32,
+    exit: {
       opacity: 0,
-    }),
+    },
   };
 
   return (
@@ -200,7 +230,7 @@ export function Write() {
       {/* Top Header Controls: Back Button, ProgressDots, Restart Button */}
       <div className="w-full max-w-[640px] mx-auto flex items-center justify-between py-2 mb-2">
         <div className="w-10 flex items-center justify-start">
-          {step > 1 ? (
+          {currentStep > 1 ? (
             <button
               type="button"
               onClick={handleBack}
@@ -225,10 +255,9 @@ export function Write() {
 
         {/* ProgressDots centered */}
         <ProgressDots
-          currentStep={step}
+          currentStep={currentStep}
           onStepClick={(targetStep) => {
-            if (targetStep < step) {
-              setDirection(-1);
+            if (targetStep < currentStep) {
               setStep(targetStep);
             }
           }}
@@ -236,7 +265,7 @@ export function Write() {
 
         {/* Restart Button on the right */}
         <div className="w-10 flex items-center justify-end">
-          {step > 1 && (
+          {currentStep > 1 && (
             <button
               type="button"
               onClick={handleRestart}
@@ -252,31 +281,30 @@ export function Write() {
 
       {/* Main Step Content with animated transitions */}
       <div className="w-full max-w-[640px] mx-auto flex-1 flex flex-col justify-start overflow-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={step}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
+            key={currentStep}
+            variants={stepVariants}
+            initial={false}
             animate="center"
             exit="exit"
             transition={{
-              duration: 0.32,
-              ease: DEFAULT_EASING,
+              duration: prefersReducedMotion ? 0.1 : 0.15,
+              ease: 'easeOut',
             }}
             className="w-full flex-1 flex flex-col items-center"
           >
-            {step === 1 && (
+            {currentStep === 1 && (
               <Step1Prompt
                 selectedPromptId={promptId || (promptChosen ? 'custom' : null)}
                 onSelectPrompt={handleSelectPrompt}
               />
             )}
 
-            {step === 2 && (
+            {currentStep === 2 && (
               <Step2Content
                 content={content}
-                onContentChange={setContent}
+                onContentChange={handleContentChange}
                 paperTheme={paperTheme}
                 onPaperThemeChange={setPaperTheme}
                 stickerIds={stickerIds}
@@ -285,7 +313,7 @@ export function Write() {
               />
             )}
 
-            {step === 3 && (
+            {currentStep === 3 && (
               <Step3Unlock
                 unlockAt={unlockAt || addMonths(new Date(), 1).getTime()}
                 onUnlockAtChange={setUnlockAt}
@@ -296,10 +324,10 @@ export function Write() {
       </div>
 
       {/* Bottom CTA Actions */}
-      {step > 1 && (
+      {currentStep > 1 && (
         <div className="fixed sm:static bottom-0 inset-x-0 z-30 p-4 sm:p-0 sm:pt-6 sm:mt-6 bg-bg-deep/90 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t border-border-soft/50 sm:border-none">
           <div className="w-full max-w-[420px] mx-auto">
-            {step === 2 && (
+            {currentStep === 2 && (
               <Button
                 variant="pill"
                 onClick={handleStep2Next}
@@ -309,7 +337,7 @@ export function Write() {
               </Button>
             )}
 
-            {step === 3 && (
+            {currentStep === 3 && (
               <Button
                 variant="pill"
                 onClick={handleSealNote}

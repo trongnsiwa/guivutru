@@ -8,12 +8,27 @@ import { NoteDetail } from '@/pages/NoteDetail';
 import { About } from '@/pages/About';
 import { NotFound } from '@/pages/NotFound';
 import { DevFonts } from '@/pages/DevFonts';
+import { DevShareCard } from '@/pages/DevShareCard';
+import { DevSealedSuccess } from '@/pages/DevSealedSuccess';
 
-const devRoutes = import.meta.env.DEV
+const devAppRoutes = import.meta.env.DEV
   ? [
       {
         path: 'dev/fonts',
         element: <DevFonts />,
+      },
+      {
+        path: 'dev/sealed-success',
+        element: <DevSealedSuccess />,
+      },
+    ]
+  : [];
+
+const devStandaloneRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: 'dev/share-card',
+        element: <DevShareCard />,
       },
     ]
   : [];
@@ -47,11 +62,14 @@ export const router = createBrowserRouter([
         path: 'gioi-thieu',
         element: <About />,
       },
-      ...devRoutes,
+      ...devAppRoutes,
       {
         path: '*',
         element: <NotFound />,
       },
     ],
   },
+  ...devStandaloneRoutes,
 ]);
+
+export default router;

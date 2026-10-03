@@ -38,7 +38,7 @@ export const NotePaper = forwardRef<HTMLDivElement, NotePaperProps>(
       content,
       stickerIds,
       stickers = [],
-      placeholder = 'Mình muốn đến Đà Lạt và ở đó mãi mãi…',
+      placeholder = 'Vũ trụ đang chờ nghe bạn nói…',
       isSealed = false,
       showFooter = false,
       maxLines,
@@ -108,7 +108,7 @@ export const NotePaper = forwardRef<HTMLDivElement, NotePaperProps>(
               maxLength={maxLength}
               rows={4}
               className={cn(
-                'w-full bg-transparent resize-none border-none outline-none font-note text-[26px] sm:text-[28px] leading-[1.5] text-text-primary placeholder:text-text-muted/40 p-0 focus:ring-0 min-h-[160px] sm:min-h-[180px]',
+                'w-full bg-transparent resize-none border-none outline-none font-note text-[26px] sm:text-[28px] leading-[1.5] text-text-primary placeholder:text-text-muted p-0 focus:ring-0 min-h-[160px] sm:min-h-[180px]',
                 contentClassName
               )}
             />

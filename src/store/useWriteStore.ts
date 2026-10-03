@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { PaperTheme } from '@/types/note';
-import { MAX_STICKERS } from '@/lib/constants';
+import { Note, PaperTheme } from '@/types/note';
+import { MAX_STICKERS, STORAGE_KEYS } from '@/lib/constants';
 
 export interface WriteState {
   step: number;
@@ -11,6 +11,8 @@ export interface WriteState {
   paperTheme: PaperTheme;
   stickerIds: string[];
   unlockAt: number | null;
+  lastSavedNote: Note | null;
+  sessionActive: boolean;
 
   // Actions
   setStep: (step: number) => void;
@@ -21,6 +23,8 @@ export interface WriteState {
   setStickerIds: (stickerIds: string[]) => void;
   toggleSticker: (sticker: string) => { added: boolean; maxReached: boolean };
   setUnlockAt: (unlockAt: number | null) => void;
+  setLastSavedNote: (note: Note | null) => void;
+  setSessionActive: (active: boolean) => void;
   reset: () => void;
 }
 
@@ -32,6 +36,8 @@ const initialState = {
   paperTheme: 'dem-sao' as PaperTheme,
   stickerIds: [] as string[],
   unlockAt: null,
+  lastSavedNote: null as Note | null,
+  sessionActive: false,
 };
 
 export const useWriteStore = create<WriteState>()(
@@ -67,10 +73,14 @@ export const useWriteStore = create<WriteState>()(
 
       setUnlockAt: (unlockAt: number | null) => set({ unlockAt }),
 
+      setLastSavedNote: (lastSavedNote: Note | null) => set({ lastSavedNote }),
+
+      setSessionActive: (sessionActive: boolean) => set({ sessionActive }),
+
       reset: () => set(initialState),
     }),
     {
-      name: 'gvt-write-flow',
+      name: STORAGE_KEYS.WRITE,
       storage: createJSONStorage(() => sessionStorage),
     }
   )

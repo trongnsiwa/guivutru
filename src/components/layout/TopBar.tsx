@@ -1,9 +1,15 @@
-import { Link, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Moon, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-export function TopBar() {
-  const location = useLocation();
+export interface TopBarProps {
+  activePath?: string;
+}
+
+export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarProps) {
+  const isToi = activePath === '/toi';
+  const isAbout = activePath === '/gioi-thieu';
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-bg-deep/70 border-b border-border-soft/50">
@@ -49,7 +55,7 @@ export function TopBar() {
             to="/toi"
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-sans transition-colors',
-              location.pathname === '/toi'
+              isToi
                 ? 'bg-lavender/20 text-lavender font-semibold'
                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-soft'
             )}
@@ -63,7 +69,7 @@ export function TopBar() {
             to="/gioi-thieu"
             className={cn(
               'p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors',
-              location.pathname === '/gioi-thieu' && 'text-lavender bg-bg-soft'
+              isAbout && 'text-lavender bg-bg-soft'
             )}
             title="Về Gửi Vũ Trụ"
           >
@@ -73,6 +79,6 @@ export function TopBar() {
       </div>
     </header>
   );
-}
+});
 
 export default TopBar;

@@ -1,9 +1,13 @@
+import React from 'react';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export function Footer() {
+export const Footer = React.memo(function Footer() {
   return (
-    <footer className="mt-auto w-full py-8 border-t border-border-soft/40 text-center text-xs text-text-muted">
+    <footer
+      style={{ contain: 'layout paint' }}
+      className="mt-auto w-full py-8 border-t border-border-soft/40 text-center text-xs text-text-muted [contain:layout_paint]"
+    >
       <div className="mx-auto max-w-[430px] px-4 space-y-3">
         <div className="flex items-center justify-center gap-1.5 leading-[1.3]">
           <span className="font-display font-normal text-[22px] text-text-secondary tracking-normal">
@@ -37,6 +41,6 @@ export function Footer() {
       </div>
     </footer>
   );
-}
+});
 
 export default Footer;

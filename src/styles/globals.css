@@ -174,7 +174,7 @@
   scrollbar-width: none;
 }
 
-/* Noise overlay */
+/* Noise overlay - GPU compositor friendly without heavy mix-blend-mode */
 .noise-overlay {
   position: fixed;
   inset: 0;
@@ -182,9 +182,75 @@
   height: 100%;
   pointer-events: none;
   z-index: 99;
-  opacity: 0.04;
-  mix-blend-mode: overlay;
+  opacity: 0.035;
+  will-change: transform;
+  transform: translateZ(0);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+@keyframes blob-float-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  33% {
+    transform: translate3d(30px, -40px, 0);
+  }
+  66% {
+    transform: translate3d(-20px, 20px, 0);
+  }
+}
+
+@keyframes blob-float-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  33% {
+    transform: translate3d(-40px, 30px, 0);
+  }
+  66% {
+    transform: translate3d(25px, -30px, 0);
+  }
+}
+
+/* Ambient compositor-driven animations */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: var(--star-min-op, 0.2);
+    transform: scale(var(--star-min-scale, 0.8));
+  }
+  50% {
+    opacity: var(--star-max-op, 1);
+    transform: scale(var(--star-max-scale, 1.1));
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(1deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(1deg);
+  }
+}
+
+@keyframes moon-float {
+  0%, 100% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
 }
 
 /* Reduced motion preference */

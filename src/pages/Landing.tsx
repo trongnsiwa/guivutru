@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Moon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { MockNoteStack } from '@/components/wish/MockNoteStack';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-export function Landing() {
+function LandingComponent() {
   const prefersReducedMotion = useReducedMotion();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
+
+  // Mark hero animated on first session visit so return visits are instant
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !sessionStorage.getItem('gvt.heroAnimated')) {
+      sessionStorage.setItem('gvt.heroAnimated', 'true');
+    }
+  }, []);
 
   const handleShowSkyToast = () => {
     setToastMessage('Vũ trụ đang xếp sao, chờ xíu nha 🌙');
@@ -31,44 +37,19 @@ export function Landing() {
       {/* Hero Section */}
       <div className="flex flex-col items-center">
         {/* Floating Moon with soft outer glow pulse */}
-        <motion.div
-          animate={
-            prefersReducedMotion
-              ? undefined
-              : {
-                  y: [-4, 4, -4],
-                }
-          }
-          transition={
-            prefersReducedMotion
-              ? undefined
-              : {
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }
-          }
+        <div
+          style={{
+            willChange: prefersReducedMotion ? undefined : 'transform',
+            animation: prefersReducedMotion ? undefined : 'moon-float 6s ease-in-out infinite',
+          }}
           className="relative inline-flex items-center justify-center"
         >
           {/* Outer glow pulse: opacity 0.4 -> 0.7 -> 0.4, 3s */}
-          <motion.div
-            animate={
-              prefersReducedMotion
-                ? undefined
-                : {
-                    opacity: [0.4, 0.7, 0.4],
-                    scale: [0.95, 1.1, 0.95],
-                  }
-            }
-            transition={
-              prefersReducedMotion
-                ? undefined
-                : {
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }
-            }
+          <div
+            style={{
+              willChange: prefersReducedMotion ? undefined : 'transform, opacity',
+              animation: prefersReducedMotion ? undefined : 'glow-pulse 3s ease-in-out infinite',
+            }}
             className="absolute inset-0 rounded-full bg-lavender/30 blur-xl pointer-events-none"
           />
 
@@ -76,7 +57,7 @@ export function Landing() {
           <div className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-bg-soft/80 border border-border-soft text-star-glow shadow-glow">
             <Moon className="h-8 w-8 fill-star-glow/20" />
           </div>
-        </motion.div>
+        </div>
 
         {/* Hero Title & Subtitle */}
         <div className="mt-5 flex flex-col items-center">
@@ -121,7 +102,10 @@ export function Landing() {
       </div>
 
       {/* 3-Step Section: 80px mobile / 120px desktop gap from MockNoteStack, 96px gap to footer */}
-      <div className="mt-[80px] sm:mt-[120px] mb-[96px] w-full max-w-xs flex flex-col items-center">
+      <div
+        style={{ contain: 'layout paint' }}
+        className="mt-[80px] sm:mt-[120px] mb-[96px] w-full max-w-xs flex flex-col items-center [contain:layout_paint]"
+      >
         <h2 className="font-display font-normal text-[36px] sm:text-[44px] text-text-primary mb-[32px] text-center tracking-normal leading-[1.3]">
           3 bước gửi điều ước
         </h2>
@@ -172,4 +156,5 @@ export function Landing() {
   );
 }
 
+export const Landing = React.memo(LandingComponent);
 export default Landing;

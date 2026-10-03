@@ -64,7 +64,7 @@ export function Step2Content({
           onContentChange={onContentChange}
           stickerIds={stickerIds}
           textareaRef={textareaRef}
-          placeholder="Mình muốn đến Đà Lạt và ở đó mãi mãi…"
+          placeholder="Vũ trụ đang chờ nghe bạn nói…"
           maxLength={MAX_CONTENT_LENGTH}
         />
 
