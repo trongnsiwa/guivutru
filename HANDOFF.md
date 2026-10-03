@@ -116,9 +116,9 @@
 | P-01 | Route transitions laggy, not smooth                                      | 🔴 P0    | Diagnostic pending |
 | P-02 | Suspected: StarField re-mounts per navigation                            | 🔴 P0    | Unconfirmed        |
 | P-03 | Suspected: Zustand selectors returning new objects → full-tree re-render | 🔴 P0    | Unconfirmed        |
-| P-04 | Share card PNG not verified with Vietnamese diacritics                   | 🟡 P1    | Pending            |
-| P-05 | iOS Safari share sheet not verified                                      | 🟡 P1    | Pending            |
-| P-06 | Success screen not verified visually                                     | 🟡 P1    | Pending            |
+| P-04 | Share card PNG not verified with Vietnamese diacritics                   | 🟡 P1    | Closed             |
+| P-05 | iOS Safari share sheet not verified                                      | 🟡 P1    | Deferred — requires real iOS device |
+| P-06 | Success screen not verified visually                                     | 🟡 P1    | Closed             |
 | P-07 | Confetti performance on low-end devices not measured                     | 🟢 P2    | Pending            |
 | P-08 | Light mode not fully tested                                              | 🟢 P2    | Pending            |
 

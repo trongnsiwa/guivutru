@@ -1,5 +1,3 @@
-import { toPng } from 'html-to-image';
-
 export interface PreRenderedCard {
   dataUrl: string;
   blob: Blob;
@@ -12,6 +10,8 @@ export interface ShareCardResult {
 }
 
 export async function preRenderCard(node: HTMLElement): Promise<PreRenderedCard> {
+  const { toPng } = await import('html-to-image');
+
   if (typeof document !== 'undefined' && document.fonts) {
     await document.fonts.ready;
   }

@@ -1,5 +1,3 @@
-import confetti from 'canvas-confetti';
-
 const CONFETTI_PALETTE = [
   '#C9B6FF',
   '#FFB3D1',
@@ -9,8 +7,10 @@ const CONFETTI_PALETTE = [
   '#FFF9E6',
 ];
 
-export function firePastelConfetti(reducedMotion = false) {
+export async function firePastelConfetti(reducedMotion = false) {
   if (reducedMotion) return;
+
+  const { default: confetti } = await import('canvas-confetti');
 
   // Burst 1 (left-center)
   confetti({

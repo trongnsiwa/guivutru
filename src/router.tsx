@@ -1,25 +1,35 @@
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { PageShell } from '@/components/layout/PageShell';
-import { Landing } from '@/pages/Landing';
-import { Write } from '@/pages/Write';
-import { Sealed } from '@/pages/Sealed';
-import { MyCorner } from '@/pages/MyCorner';
-import { NoteDetail } from '@/pages/NoteDetail';
-import { About } from '@/pages/About';
-import { NotFound } from '@/pages/NotFound';
-import { DevFonts } from '@/pages/DevFonts';
-import { DevShareCard } from '@/pages/DevShareCard';
-import { DevSealedSuccess } from '@/pages/DevSealedSuccess';
+
+const Landing = lazy(() => import('@/pages/Landing'));
+const Write = lazy(() => import('@/pages/Write'));
+const Sealed = lazy(() => import('@/pages/Sealed'));
+const MyCorner = lazy(() => import('@/pages/MyCorner'));
+const NoteDetail = lazy(() => import('@/pages/NoteDetail'));
+const About = lazy(() => import('@/pages/About'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+const DevFonts = lazy(() => import('@/pages/DevFonts'));
+const DevShareCard = lazy(() => import('@/pages/DevShareCard'));
+const DevSealedSuccess = lazy(() => import('@/pages/DevSealedSuccess'));
+
+function withSuspense(Component: React.ComponentType) {
+  return (
+    <Suspense fallback={null}>
+      <Component />
+    </Suspense>
+  );
+}
 
 const devAppRoutes = import.meta.env.DEV
   ? [
       {
         path: 'dev/fonts',
-        element: <DevFonts />,
+        element: withSuspense(DevFonts),
       },
       {
         path: 'dev/sealed-success',
-        element: <DevSealedSuccess />,
+        element: withSuspense(DevSealedSuccess),
       },
     ]
   : [];
@@ -28,7 +38,7 @@ const devStandaloneRoutes = import.meta.env.DEV
   ? [
       {
         path: 'dev/share-card',
-        element: <DevShareCard />,
+        element: withSuspense(DevShareCard),
       },
     ]
   : [];
@@ -40,32 +50,32 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Landing />,
+        element: withSuspense(Landing),
       },
       {
         path: 'viet',
-        element: <Write />,
+        element: withSuspense(Write),
       },
       {
         path: 'viet/xong',
-        element: <Sealed />,
+        element: withSuspense(Sealed),
       },
       {
         path: 'toi',
-        element: <MyCorner />,
+        element: withSuspense(MyCorner),
       },
       {
         path: 'note/:id',
-        element: <NoteDetail />,
+        element: withSuspense(NoteDetail),
       },
       {
         path: 'gioi-thieu',
-        element: <About />,
+        element: withSuspense(About),
       },
       ...devAppRoutes,
       {
         path: '*',
-        element: <NotFound />,
+        element: withSuspense(NotFound),
       },
     ],
   },
