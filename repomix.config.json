@@ -23,7 +23,6 @@
       "**/*.webm",
       "**/*.ttf",
       "**/*.otf",
-      "**/*.md",
       "repomix-output.*",
       "**/repomix-output.*"
     ]

@@ -6,7 +6,8 @@ export const storage = {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.NOTES);
       if (!data) return [];
-      return JSON.parse(data) as Note[];
+      const list = JSON.parse(data) as Note[];
+      return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     } catch (err) {
       console.error('Failed to load notes from localStorage:', err);
       return [];

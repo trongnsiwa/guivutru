@@ -17,8 +17,17 @@ export async function preRenderCard(node: HTMLElement): Promise<PreRenderedCard>
   }
 
   const dataUrl = await toPng(node, {
-    pixelRatio: 2,
+    pixelRatio: 1,
     cacheBust: true,
+    width: 1080,
+    height: 1920,
+    style: {
+      position: 'static',
+      left: '0',
+      top: '0',
+      margin: '0',
+      transform: 'none',
+    },
   });
 
   const res = await fetch(dataUrl);

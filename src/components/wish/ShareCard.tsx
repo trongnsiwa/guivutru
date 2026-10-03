@@ -24,6 +24,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
           width: 1080,
           height: 1920,
           backgroundColor: theme.bgColor,
+          borderColor: theme.borderColor,
           zIndex: -100,
           pointerEvents: 'none',
           ...style,
