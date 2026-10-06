@@ -1,4 +1,4 @@
-import { PaperTheme } from '@/types/note';
+import type { PaperTheme } from '../types/note.ts';
 
 export interface PaperThemeConfig {
   id: PaperTheme;
@@ -49,6 +49,8 @@ export const STORAGE_KEYS = {
   LAST_SEALED: 'gvt.lastSealed',
   VIEWED_UNLOCKS: 'gvt.viewedUnlocks',
   PREFS: 'gvt.prefs',
+  DEVICE_ID: 'gvt.deviceId',
+  AUTH: 'gvt.auth',
 } as const;
 
 export const DEFAULT_EASING = [0.22, 1, 0.36, 1];

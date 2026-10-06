@@ -5,11 +5,19 @@ import { TopBar } from './TopBar';
 import { Footer } from './Footer';
 import { StarField } from '@/components/fx/StarField';
 import { NoiseOverlay } from '@/components/fx/NoiseOverlay';
+import { LoginModal } from '@/components/auth/LoginModal';
+import { SyncPromptModal } from '@/components/auth/SyncPromptModal';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useAuth } from '@/hooks/useAuth';
 
 export function PageShell() {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
+  const initAuth = useAuth((s) => s.initAuth);
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
@@ -47,6 +55,10 @@ export function PageShell() {
           </motion.div>
         </div>
       </main>
+
+      {/* Modals for Auth & Local-first Sync */}
+      <LoginModal />
+      <SyncPromptModal />
 
       {/* Screen reader route change announcement */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">

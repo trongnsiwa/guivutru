@@ -1,5 +1,5 @@
-import { Note } from '@/types/note';
-import { STORAGE_KEYS } from './constants';
+import type { Note } from '../types/note.ts';
+import { STORAGE_KEYS } from './constants.ts';
 
 export const storage = {
   getNotes(): Note[] {

@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 
 import { useShallow } from 'zustand/shallow';
 import { useWriteStore } from '@/store/useWriteStore';
-import { storage } from '@/lib/storage';
+import { useNotes } from '@/hooks/useNotes';
 import { Note } from '@/types/note';
 import { step2ContentSchema, wishSchema } from '@/lib/schemas';
 import { PromptOption, STORAGE_KEYS } from '@/lib/constants';
@@ -189,9 +189,9 @@ export function Write() {
       openedAt: null,
     };
 
-    // Save to localStorage
+    // Save to localStorage and sync if authenticated
     try {
-      storage.addNote(newNote);
+      useNotes.getState().addNote(newNote);
     } catch {
       showToast('Không lưu được rồi, thử lại nha 🥲');
       return;
