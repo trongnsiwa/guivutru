@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TopBar } from './TopBar';
@@ -9,6 +10,16 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 export function PageShell() {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      document.head.appendChild(link);
+    }
+    link.setAttribute('href', `https://guivutru.pages.dev${location.pathname}`);
+  }, [location.pathname]);
 
   return (
     <div className="relative flex min-h-screen flex-col bg-bg-deep text-text-primary selection:bg-lavender selection:text-bg-deep">

@@ -16,26 +16,26 @@ export const Footer = React.memo(function Footer() {
           <span className="text-star-glow text-sm inline select-none">✨</span>
         </div>
 
-        <div className="flex items-center justify-center gap-4 text-xs font-sans">
-          <Link to="/" className="hover:text-text-secondary transition-colors">
+        <div className="flex items-center justify-center gap-4 text-xs font-sans text-text-secondary">
+          <Link to="/" className="text-text-secondary hover:text-text-primary transition-colors">
             Trang chủ
           </Link>
-          <span>•</span>
-          <Link to="/viet" className="hover:text-text-secondary transition-colors">
+          <span aria-hidden="true">•</span>
+          <Link to="/viet" className="text-text-secondary hover:text-text-primary transition-colors">
             Viết điều ước
           </Link>
-          <span>•</span>
-          <Link to="/toi" className="hover:text-text-secondary transition-colors">
+          <span aria-hidden="true">•</span>
+          <Link to="/toi" className="text-text-secondary hover:text-text-primary transition-colors">
             Góc của tôi
           </Link>
-          <span>•</span>
-          <Link to="/gioi-thieu" className="hover:text-text-secondary transition-colors">
+          <span aria-hidden="true">•</span>
+          <Link to="/gioi-thieu" className="text-text-secondary hover:text-text-primary transition-colors">
             Giới thiệu
           </Link>
         </div>
 
-        <p className="flex items-center justify-center gap-1 pt-1 opacity-70">
-          <span>Dành tặng bạn và những ước mơ bay xa</span>
+        <p className="flex items-center justify-center gap-1 pt-1">
+          <span className="text-text-secondary">Dành tặng bạn và những ước mơ bay xa</span>
           <Heart className="h-3 w-3 text-pink fill-pink/30 inline" />
         </p>
       </div>

@@ -93,6 +93,13 @@
     box-sizing: border-box;
   }
 
+  button,
+  a,
+  [role="button"],
+  input[type="date"] {
+    touch-action: manipulation;
+  }
+
   html {
     @apply bg-bg-deep text-text-primary;
     color-scheme: dark;

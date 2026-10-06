@@ -9,6 +9,7 @@
     "/og-image.png",
     "/qr-guivutru.svg",
     "/star-field.svg",
-    "/mock-notes/*"
+    "/mock-notes/*",
+    "/robots.txt"
   ]
 }
