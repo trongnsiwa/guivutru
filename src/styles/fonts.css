@@ -3,7 +3,38 @@
    Fonts: Ingrid Darling (400), Nunito (400, 600, 700), Sriracha (400)
    Explicit subsets: vietnamese, latin-ext, latin
    font-display: swap to prevent FOIT
+   Fallback metric overrides prevent CLS during font swap
    ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Fallback Metric Overrides (Zero CLS during font swap)
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Ingrid Darling Fallback';
+  src: local('Arial');
+  ascent-override: 162.88%;
+  descent-override: 71.97%;
+  line-gap-override: 0%;
+  size-adjust: 52.8%;
+}
+
+@font-face {
+  font-family: 'Sriracha Fallback';
+  src: local('Arial');
+  ascent-override: 127.99%;
+  descent-override: 57.7%;
+  line-gap-override: 0%;
+  size-adjust: 95.32%;
+}
+
+@font-face {
+  font-family: 'Nunito Fallback';
+  src: local('Arial');
+  ascent-override: 104.17%;
+  descent-override: 36.1%;
+  line-gap-override: 0%;
+  size-adjust: 96.96%;
+}
 
 /* --------------------------------------------------------------------------
    Ingrid Darling (font-display) - Weight: 400 only

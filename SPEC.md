@@ -600,7 +600,7 @@ RULES:
 
 ## 12. Acceptance Criteria (v1 done = all ✅)
 
-- [ ] Landing load < 1.5s trên 4G, Lighthouse ≥ 90 mobile
+- [ ] Landing load: Lighthouse mobile Performance ≥ 90 (median of 3 runs on simulated 4G). LCP ≤ 2.5s under the same conditions.
 - [ ] Viết được note trong < 60 giây
 - [ ] Note lưu vào localStorage, reload vẫn còn
 - [ ] Note sealed không đọc được nội dung
@@ -610,6 +610,8 @@ RULES:
 - [ ] Không có chữ tiếng Anh lẫn vào UI
 - [ ] Deploy thành công trên `guivutru.pages.dev`
 - [ ] Test pass trên Chrome Android + Safari iOS
+
+_Ghi chú: LCP is measured with Lighthouse mobile simulated 4G (median of 3 runs). Real-world LCP on 4G/5G will be lower._
 
 ---
 

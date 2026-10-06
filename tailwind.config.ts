@@ -48,12 +48,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        note: ['"Sriracha"', 'cursive', 'sans-serif'],
-        display: ['"Ingrid Darling"', 'cursive', 'sans-serif'],
-        sans: ['"Nunito"', 'sans-serif'],
-        heading: ['"Ingrid Darling"', 'cursive', 'sans-serif'],
-        body: ['"Nunito"', 'sans-serif'],
-        ui: ['"Nunito"', 'sans-serif'],
+        note: ['"Sriracha"', '"Sriracha Fallback"', 'cursive', 'sans-serif'],
+        display: ['"Ingrid Darling"', '"Ingrid Darling Fallback"', 'cursive', 'sans-serif'],
+        sans: ['"Nunito"', '"Nunito Fallback"', 'sans-serif'],
+        heading: ['"Ingrid Darling"', '"Ingrid Darling Fallback"', 'cursive', 'sans-serif'],
+        body: ['"Nunito"', '"Nunito Fallback"', 'sans-serif'],
+        ui: ['"Nunito"', '"Nunito Fallback"', 'sans-serif'],
       },
       borderRadius: {
         sm: '12px',

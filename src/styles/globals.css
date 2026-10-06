@@ -103,7 +103,7 @@
   html {
     @apply bg-bg-deep text-text-primary;
     color-scheme: dark;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Nunito', 'Nunito Fallback', sans-serif;
     line-height: 1.6;
   }
 
@@ -119,7 +119,7 @@
 
   /* Typography shortcuts */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Ingrid Darling', cursive, sans-serif;
+    font-family: 'Ingrid Darling', 'Ingrid Darling Fallback', cursive, sans-serif;
     font-weight: 400;
   }
 }

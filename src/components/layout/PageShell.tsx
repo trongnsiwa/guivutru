@@ -31,7 +31,7 @@ export function PageShell() {
       <TopBar activePath={location.pathname} />
 
       {/* Main Content Area - Stable dimensions prevent layout thrashing */}
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-start w-full px-4 pb-6">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-start w-full px-4 pb-6 min-h-[calc(100vh-4rem)]">
         <div className="w-full max-w-[640px] flex-1 flex flex-col">
           <motion.div
             key={location.pathname}
