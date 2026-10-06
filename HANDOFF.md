@@ -141,7 +141,7 @@
 | P-05 | iOS Safari share sheet not verified                                      | 🟡 P1    | Deferred — requires real iOS device                    |
 | P-06 | Success screen not verified visually                                     | 🟡 P1    | Closed (verified via CDP snapshot & DOM check)         |
 | P-07 | Confetti performance on low-end devices not measured                     | 🟢 P2    | Pending (awaits physical iPhone 11 test)               |
-| P-08 | Light mode not fully tested                                              | 🟢 P2    | Pending (awaits physical multi-device test)            |
+| P-08 | Light mode not fully tested                                              | 🟢 P2    | Won't fix — light mode removed from v1.                |
 | P-09 | Mobile 4G LCP 1.76s vs SPEC §12 <1.5s (Desktop unthrottled is 1.3s)       | 🟢 P2    | Closed — SPEC §12 amended to reflect achievable target (see SPEC §12 footnote). |
 | P-10 | Live / Performance regression under simulated 4G (76 vs prior 98)        | 🟡 P1    | Closed — diagnostic proved measurement noise (16 pt spread, TBT 0ms across all 5 runs). No code change needed. |
 | P-11 | Footer color contrast below WCAG AA (3.49:1 on nav links, 2.30:1 on tagline) | 🟡 P1 | Closed (see Fix 1)                                     |
@@ -166,9 +166,6 @@
 3. **iPhone 11 Confetti FPS audit (P-07):**
    - Attach Web Inspector on Safari Mac.
    - Measure frame rate during seal sequence confetti (target 60fps / ≥58fps, 0 jank frames).
-4. **Light Mode verification (P-08):**
-   - Toggle theme across all routes (`/`, `/viet`, `/viet/xong`, `/toi`, `/note/:id`, `/gioi-thieu`).
-   - Verify pale cosmos static field and text contrast ≥4.5:1.
 
 ---
 
@@ -190,6 +187,7 @@
 - Multi-language (EN toggle)
 - PWA / offline mode
 - Premium tier (paper packs, sticker packs)
+- Light mode (needs a designer-scoped palette; may not be viable given the cosmos metaphor)
 
 ---
 
@@ -215,7 +213,7 @@ RULES
 10. Do not build v2 features without an explicit go-ahead.
 
 CURRENT BLOCKER
-No technical blockers. A11y, SEO, and CLS acceptance gaps closed. Awaiting physical device matrix (P-05, P-07, P-08).
+No technical blockers. A11y, SEO, and CLS acceptance gaps closed. Awaiting physical device matrix (P-05, P-07).
 
 WHEN REPORTING BACK
 - Files changed
@@ -235,7 +233,7 @@ When you come back to this project:
 
 1. `cd gui-vu-tru && npm install && npm run dev`
 2. Confirm live deployment: `https://guivutru.pages.dev/` (all subpaths return HTTP 200).
-3. Connect physical Android & iOS devices for acceptance matrix (P-05, P-07, P-08).
+3. Connect physical Android & iOS devices for acceptance matrix (P-05, P-07).
 4. If issues found on device, apply surgical fixes with unit/CDP verification.
 
 ---

@@ -36,9 +36,6 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Check light mode
-    const isLightMode = document.documentElement.classList.contains('light');
-
     // Counts per layer
     const countFar = Math.round(total * 0.6); // 60%
     const countMid = Math.round(total * 0.3); // 30%
@@ -112,7 +109,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
     nebulaCanvas.width = NEBULA_SIZE;
     nebulaCanvas.height = NEBULA_SIZE;
 
-    if (nebulaCtx && !isLightMode) {
+    if (nebulaCtx) {
       // Soft lavender gradient (upper-left)
       const grad1 = nebulaCtx.createRadialGradient(
         NEBULA_SIZE * 0.3,
@@ -171,8 +168,8 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
     const drawFrame = (timeMs: number) => {
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Draw Nebula (Dark mode only, slow drift)
-      if (!isLightMode && !prefersReducedMotion && nebulaCanvas.width > 0) {
+      // 1. Draw Nebula (slow drift)
+      if (!prefersReducedMotion && nebulaCanvas.width > 0) {
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
         ctx.globalAlpha = 0.85;
@@ -187,17 +184,17 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
       }
 
       // 2. Stars: Colors
-      const WHITE = isLightMode ? '#72658E' : '#FFFFFF';
-      const WARM = isLightMode ? '#9E7250' : '#FFE9A8';
-      const COOL = isLightMode ? '#3C7099' : '#A5D8FF';
+      const WHITE = '#FFFFFF';
+      const WARM = '#FFE9A8';
+      const COOL = '#A5D8FF';
 
       const timeSec = timeMs / 1000;
 
       for (let i = 0; i < total; i++) {
         const offset = i * STRIDE;
 
-        // Update drift if motion is enabled and in dark mode
-        if (!prefersReducedMotion && !isLightMode) {
+        // Update drift if motion is enabled
+        if (!prefersReducedMotion) {
           const layer = starsData[offset + 5];
           if (layer === 0) {
             starsData[offset] = (starsData[offset] + driftFarX) % 1;
@@ -221,8 +218,8 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
         const baseOp = starsData[offset + 7];
 
         let op: number;
-        if (prefersReducedMotion || isLightMode) {
-          op = isLightMode ? baseOp * 0.45 : baseOp;
+        if (prefersReducedMotion) {
+          op = baseOp;
         } else {
           const phase = ((timeSec + delay) % dur) / dur;
           const sine = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2);
@@ -232,8 +229,8 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
         ctx.fillStyle = colorType === 0 ? WHITE : colorType === 1 ? WARM : COOL;
         ctx.globalAlpha = Math.min(1, Math.max(0, op));
 
-        // Subtle glow for near stars in dark mode
-        if (layer === 2 && !isLightMode && !prefersReducedMotion) {
+        // Subtle glow for near stars
+        if (layer === 2 && !prefersReducedMotion) {
           ctx.save();
           ctx.shadowColor = 'rgba(230, 215, 255, 0.6)';
           ctx.shadowBlur = 4;
@@ -248,8 +245,8 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
         }
       }
 
-      // 3. Rare Shooting Stars (1–3 per 60s, dark mode only, non-reduced motion)
-      if (!isLightMode && !prefersReducedMotion) {
+      // 3. Rare Shooting Stars (1–3 per 60s, non-reduced motion)
+      if (!prefersReducedMotion) {
         if (!activeShootingStar && timeMs >= nextShootingStarTime) {
           // Spawn shooting star
           const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.3; // ~45 degrees diagonal
@@ -301,7 +298,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
       animId = requestAnimationFrame(loop);
     };
 
-    if (prefersReducedMotion || isLightMode) {
+    if (prefersReducedMotion) {
       drawFrame(0);
     } else {
       animId = requestAnimationFrame(loop);
@@ -314,7 +311,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
           cancelAnimationFrame(animId);
           animId = 0;
         }
-      } else if (!prefersReducedMotion && !isLightMode && !animId) {
+      } else if (!prefersReducedMotion && !animId) {
         animId = requestAnimationFrame(loop);
       }
     };

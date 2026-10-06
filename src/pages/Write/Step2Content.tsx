@@ -40,15 +40,6 @@ export function Step2Content({
         textareaRef.current.setSelectionRange(content.length, content.length);
       }
     }
-
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('theme') === 'light') {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
-    }
   }, []);
 
   return (

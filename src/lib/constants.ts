@@ -45,7 +45,6 @@ export const MIN_UNLOCK_DAYS = 7;
 export const STORAGE_KEYS = {
   NOTES: 'gvt.notes',
   VERSION: 'gvt.version',
-  THEME: 'gvt.theme',
   WRITE: 'gvt.write',
   LAST_SEALED: 'gvt.lastSealed',
   VIEWED_UNLOCKS: 'gvt.viewedUnlocks',

@@ -85,17 +85,9 @@
 --border-strong: rgba(201, 182, 255, 0.35);
 ```
 
-### 2.2 Palette — Light Mode (tuỳ chọn, phase 8)
+### 2.2 Palette — Light Mode (removed, not planned)
 
-```css
---bg-deep: #fffbf5;
---bg-soft: #fff4e6;
---bg-elevated: #ffffff;
---text-primary: #3a3352;
---text-secondary: #6e628f;
---lavender: #b39dff;
---pink: #ffb3d1;
-```
+Light mode was removed in v1. The product is dark-mode only. The night-sky metaphor does not translate to a light palette.
 
 ### 2.3 Typography
 
@@ -551,7 +543,6 @@ gui-vu-tru/
 ### Phase 5 — Polish (1 ngày)
 
 - [ ] `prefers-reduced-motion` respect
-- [ ] Light mode toggle
 - [ ] OG image + meta tags
 - [ ] Accessibility: focus ring, aria-label, contrast ≥ 4.5
 - [ ] Lighthouse ≥ 90 mobile
@@ -646,6 +637,7 @@ _Ghi chú: LCP is measured with Lighthouse mobile simulated 4G (median of 3 runs
 
 ## 15. Open Questions (cần quyết trước khi code)
 
+- [x] Light mode: **removed from v1**. Dark mode only. Revisit only if a designer scopes a light palette that preserves the cosmos metaphor.
 - [ ] Favicon: monogram **GVT** hay mặt trăng 🌙?
 - [ ] OG image: có cần thiết kế riêng không?
 - [ ] Ngôn ngữ trong code (comment, biến): tiếng Anh hay tiếng Việt? _(đề xuất: Anh)_

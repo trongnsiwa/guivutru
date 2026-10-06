@@ -43,48 +43,6 @@
   --paper-rung: #122a22;
   --paper-rung-border: #a0f0dc;
   --paper-giay-cu: #2b2320;
-  --paper-giay-cu-border: #ffcba4;
-}
-
-.light {
-  /* Nền */
-  --bg-deep: #fffbf5;
-  --bg-soft: #fff4e6;
-  --bg-elevated: #ffffff;
-
-  /* Sao & ánh sáng */
-  --star: #ffd166;
-  --star-glow: #ffeaa7;
-
-  /* Accent */
-  --lavender: #6e48aa;
-  --pink: #ffb3d1;
-  --mint: #0f766e;
-  --peach: #ffcba4;
-  --sky: #0369a1;
-
-  /* Chữ */
-  --text-primary: #3a3352;
-  --text-secondary: #574b75;
-  --text-muted: #72658e;
-
-  /* Viền */
-  --border-soft: rgba(110, 72, 170, 0.15);
-  --border-strong: rgba(110, 72, 170, 0.35);
-
-  /* Giấy (Paper themes) */
-  --paper-dem-sao: #1b1436;
-  --paper-dem-sao-border: #c9b6ff;
-  --paper-tim-mong: #241b47;
-  --paper-tim-mong-border: #c9b6ff;
-  --paper-hogn: #3a1f3d;
-  --paper-hogn-border: #ffb3d1;
-  --paper-bien: #0f2036;
-  --paper-bien-border: #a5d8ff;
-  --paper-rung: #122a22;
-  --paper-rung-border: #a0f0dc;
-  --paper-giay-cu: #2b2320;
-  --paper-giay-cu-border: #ffcba4;
 }
 
 @layer base {
@@ -105,10 +63,6 @@
     color-scheme: dark;
     font-family: 'Nunito', 'Nunito Fallback', sans-serif;
     line-height: 1.6;
-  }
-
-  html.light {
-    color-scheme: light;
   }
 
   body {
@@ -155,24 +109,6 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-soft) transparent;
-}
-
-/* 3. Light mode override */
-[data-theme="light"] ::-webkit-scrollbar-thumb,
-.light ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  background-clip: padding-box;
-}
-
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
-.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 98, 143, 0.7);
-  background-clip: padding-box;
-}
-
-[data-theme="light"] *,
-.light * {
-  scrollbar-color: var(--border-strong) transparent;
 }
 
 /* Utility class: Hide scrollbar */

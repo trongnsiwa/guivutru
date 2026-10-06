@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Moon, Sun, BookOpen, Info } from 'lucide-react';
-import { useTheme } from '@/hooks/useTheme';
+import { BookOpen, Info } from 'lucide-react';
 import { MeteorShower } from '@/components/fx/MeteorShower';
 import { cn } from '@/lib/cn';
 
@@ -12,7 +11,6 @@ export interface TopBarProps {
 export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarProps) {
   const isToi = activePath === '/toi';
   const isAbout = activePath === '/gioi-thieu';
-  const { toggleTheme, isDark } = useTheme();
 
   const tapTimestampsRef = useRef<number[]>([]);
   const [showMeteorShower, setShowMeteorShower] = useState(false);
@@ -100,20 +98,6 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
           >
             <Info className="h-4 w-4" />
           </Link>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
-            title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
-            aria-label={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
-          >
-            {isDark ? (
-              <Sun className="h-4 w-4 text-star-glow" />
-            ) : (
-              <Moon className="h-4 w-4 text-text-secondary" />
-            )}
-          </button>
         </div>
       </div>
 
