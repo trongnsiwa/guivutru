@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface ToastProps {
   message: string | null;
@@ -11,8 +10,6 @@ export interface ToastProps {
 }
 
 export function Toast({ message, visible, onClose, duration = 2500 }: ToastProps) {
-  const prefersReducedMotion = useReducedMotion();
-
   useEffect(() => {
     if (visible && onClose) {
       const timer = setTimeout(() => {
@@ -26,9 +23,9 @@ export function Toast({ message, visible, onClose, duration = 2500 }: ToastProps
     <AnimatePresence>
       {visible && message && (
         <motion.div
-          initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
-          animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.2 }}
           className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-pill border border-border-strong bg-bg-elevated/95 backdrop-blur-md px-5 py-2.5 text-sm font-sans font-medium text-text-primary shadow-glow max-w-[90vw] text-center"
         >

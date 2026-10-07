@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Moon } from 'lucide-react';
 import { Note } from '@/types/note';
 import { PAPER_THEMES, DEFAULT_EASING } from '@/lib/constants';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { firePastelConfetti } from '@/components/fx/Confetti';
 
 export interface SealSequenceProps {
@@ -12,34 +11,20 @@ export interface SealSequenceProps {
 }
 
 export function SealSequence({ note, onComplete }: SealSequenceProps) {
-  const prefersReducedMotion = useReducedMotion();
   const theme = PAPER_THEMES.find((t) => t.id === note.paperTheme) || PAPER_THEMES[0];
   const confettiFiredRef = useRef(false);
 
-  // If reduced motion, jump directly to success screen
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      onComplete();
-    }
-  }, [prefersReducedMotion, onComplete]);
-
   // Trigger confetti around ~1800ms
   useEffect(() => {
-    if (prefersReducedMotion) return;
-
     const timer = setTimeout(() => {
       if (!confettiFiredRef.current) {
         confettiFiredRef.current = true;
-        firePastelConfetti(false);
+        firePastelConfetti();
       }
     }, 1800);
 
     return () => clearTimeout(timer);
-  }, [prefersReducedMotion]);
-
-  if (prefersReducedMotion) {
-    return null;
-  }
+  }, []);
 
   return (
     <div className="relative w-full flex-1 flex flex-col items-center justify-center min-h-[500px] overflow-hidden select-none">

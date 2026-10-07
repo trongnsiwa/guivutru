@@ -11,7 +11,6 @@ import { useNotes } from '@/hooks/useNotes';
 import { Note } from '@/types/note';
 import { step2ContentSchema, wishSchema } from '@/lib/schemas';
 import { PromptOption, STORAGE_KEYS } from '@/lib/constants';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 import { ProgressDots } from '@/components/ui/ProgressDots';
 import { Button } from '@/components/ui/Button';
@@ -24,7 +23,6 @@ import { Step3Unlock } from './Step3Unlock';
 export function Write() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const prefersReducedMotion = useReducedMotion();
 
   // Zustand persistent store with shallow selector
   const {
@@ -301,7 +299,7 @@ export function Write() {
             animate="center"
             exit="exit"
             transition={{
-              duration: prefersReducedMotion ? 0.1 : 0.15,
+              duration: 0.15,
               ease: 'easeOut',
             }}
             className="w-full flex-1 flex flex-col items-center"

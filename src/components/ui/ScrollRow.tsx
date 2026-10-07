@@ -1,6 +1,5 @@
 import { ReactNode, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { cn } from '@/lib/cn';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useScrollEdgeFade } from '@/hooks/useScrollEdgeFade';
 
 export interface ScrollRowProps {
@@ -19,7 +18,6 @@ export interface ScrollRowHandle {
 
 export const ScrollRow = forwardRef<ScrollRowHandle, ScrollRowProps>(
   ({ children, className, wrapperClassName, gapClassName = 'gap-3' }, ref) => {
-    const prefersReducedMotion = useReducedMotion();
     const { scrollRef, showLeftFade, showRightFade, checkScroll } = useScrollEdgeFade<HTMLDivElement>();
 
     useImperativeHandle(ref, () => ({
@@ -49,7 +47,7 @@ export const ScrollRow = forwardRef<ScrollRowHandle, ScrollRowProps>(
         <div
           className={cn(
             'absolute -left-2 top-0 bottom-0 w-12 pointer-events-none z-10 bg-gradient-to-r from-[var(--bg-deep)] to-transparent',
-            prefersReducedMotion ? 'duration-0' : 'transition-opacity duration-200',
+            'transition-opacity duration-200',
             showLeftFade ? 'opacity-100' : 'opacity-0'
           )}
           aria-hidden="true"
@@ -71,7 +69,7 @@ export const ScrollRow = forwardRef<ScrollRowHandle, ScrollRowProps>(
         <div
           className={cn(
             'absolute -right-2 top-0 bottom-0 w-12 pointer-events-none z-10 bg-gradient-to-r from-transparent to-[var(--bg-deep)]',
-            prefersReducedMotion ? 'duration-0' : 'transition-opacity duration-200',
+            'transition-opacity duration-200',
             showRightFade ? 'opacity-100' : 'opacity-0'
           )}
           aria-hidden="true"

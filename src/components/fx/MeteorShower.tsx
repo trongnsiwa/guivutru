@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface MeteorShowerProps {
   onComplete: () => void;
@@ -7,14 +6,8 @@ export interface MeteorShowerProps {
 
 export function MeteorShower({ onComplete }: MeteorShowerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (prefersReducedMotion) {
-      onComplete();
-      return;
-    }
-
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -104,9 +97,7 @@ export function MeteorShower({ onComplete }: MeteorShowerProps) {
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [onComplete, prefersReducedMotion]);
-
-  if (prefersReducedMotion) return null;
+  }, [onComplete]);
 
   return (
     <canvas

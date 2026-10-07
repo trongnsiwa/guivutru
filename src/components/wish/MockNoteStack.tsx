@@ -1,10 +1,7 @@
 import React from 'react';
 import { NotePaper } from './NotePaper';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 function MockNoteStackComponent() {
-  const prefersReducedMotion = useReducedMotion();
-
   return (
     <div className="relative w-full max-w-[340px] sm:max-w-[380px] mx-auto h-[195px] sm:h-[205px]">
       {/* Card 3 (Back, mostly hidden, bottom-right peek) */}
@@ -55,8 +52,8 @@ function MockNoteStackComponent() {
           left: 0,
           transform: 'rotate(1deg)',
           zIndex: 30,
-          willChange: prefersReducedMotion ? undefined : 'transform',
-          animation: prefersReducedMotion ? undefined : 'float-gentle 4s ease-in-out infinite',
+          willChange: 'transform',
+          animation: 'float-gentle 4s ease-in-out infinite',
         }}
       >
         <NotePaper

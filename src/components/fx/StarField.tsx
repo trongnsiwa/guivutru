@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface StarFieldProps {
   total?: number;
@@ -27,7 +26,6 @@ interface ShootingStar {
 
 function StarFieldComponent({ total = 140 }: StarFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -169,7 +167,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
       ctx.clearRect(0, 0, width, height);
 
       // 1. Draw Nebula (slow drift)
-      if (!prefersReducedMotion && nebulaCanvas.width > 0) {
+      if (nebulaCanvas.width > 0) {
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
         ctx.globalAlpha = 0.85;
@@ -193,19 +191,17 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
       for (let i = 0; i < total; i++) {
         const offset = i * STRIDE;
 
-        // Update drift if motion is enabled
-        if (!prefersReducedMotion) {
-          const layer = starsData[offset + 5];
-          if (layer === 0) {
-            starsData[offset] = (starsData[offset] + driftFarX) % 1;
-            starsData[offset + 1] = (starsData[offset + 1] + driftFarY + 1) % 1;
-          } else if (layer === 1) {
-            starsData[offset] = (starsData[offset] + driftMidX) % 1;
-            starsData[offset + 1] = (starsData[offset + 1] + driftMidY + 1) % 1;
-          } else {
-            starsData[offset] = (starsData[offset] + driftNearX) % 1;
-            starsData[offset + 1] = (starsData[offset + 1] + driftNearY + 1) % 1;
-          }
+        // Update drift
+        const layer = starsData[offset + 5];
+        if (layer === 0) {
+          starsData[offset] = (starsData[offset] + driftFarX) % 1;
+          starsData[offset + 1] = (starsData[offset + 1] + driftFarY + 1) % 1;
+        } else if (layer === 1) {
+          starsData[offset] = (starsData[offset] + driftMidX) % 1;
+          starsData[offset + 1] = (starsData[offset + 1] + driftMidY + 1) % 1;
+        } else {
+          starsData[offset] = (starsData[offset] + driftNearX) % 1;
+          starsData[offset + 1] = (starsData[offset + 1] + driftNearY + 1) % 1;
         }
 
         const x = starsData[offset] * width;
@@ -213,24 +209,18 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
         const size = starsData[offset + 2];
         const dur = starsData[offset + 3];
         const delay = starsData[offset + 4];
-        const layer = starsData[offset + 5];
         const colorType = starsData[offset + 6];
         const baseOp = starsData[offset + 7];
 
-        let op: number;
-        if (prefersReducedMotion) {
-          op = baseOp;
-        } else {
-          const phase = ((timeSec + delay) % dur) / dur;
-          const sine = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2);
-          op = baseOp * (0.6 + 0.4 * sine);
-        }
+        const phase = ((timeSec + delay) % dur) / dur;
+        const sine = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2);
+        const op = baseOp * (0.6 + 0.4 * sine);
 
         ctx.fillStyle = colorType === 0 ? WHITE : colorType === 1 ? WARM : COOL;
         ctx.globalAlpha = Math.min(1, Math.max(0, op));
 
         // Subtle glow for near stars
-        if (layer === 2 && !prefersReducedMotion) {
+        if (layer === 2) {
           ctx.save();
           ctx.shadowColor = 'rgba(230, 215, 255, 0.6)';
           ctx.shadowBlur = 4;
@@ -245,50 +235,48 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
         }
       }
 
-      // 3. Rare Shooting Stars (1–3 per 60s, non-reduced motion)
-      if (!prefersReducedMotion) {
-        if (!activeShootingStar && timeMs >= nextShootingStarTime) {
-          // Spawn shooting star
-          const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.3; // ~45 degrees diagonal
-          activeShootingStar = {
-            startX: Math.random() * width * 0.75,
-            startY: Math.random() * height * 0.35,
-            length: 70 + Math.random() * 50, // 70-120px
-            angle,
-            duration: 450 + Math.random() * 250, // 450-700ms
-            startTime: timeMs,
-          };
-          nextShootingStarTime = timeMs + 20000 + Math.random() * 25000;
-        }
+      // 3. Rare Shooting Stars (1–3 per 60s)
+      if (!activeShootingStar && timeMs >= nextShootingStarTime) {
+        // Spawn shooting star
+        const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.3; // ~45 degrees diagonal
+        activeShootingStar = {
+          startX: Math.random() * width * 0.75,
+          startY: Math.random() * height * 0.35,
+          length: 70 + Math.random() * 50, // 70-120px
+          angle,
+          duration: 450 + Math.random() * 250, // 450-700ms
+          startTime: timeMs,
+        };
+        nextShootingStarTime = timeMs + 20000 + Math.random() * 25000;
+      }
 
-        if (activeShootingStar) {
-          const elapsed = timeMs - activeShootingStar.startTime;
-          const progress = elapsed / activeShootingStar.duration;
+      if (activeShootingStar) {
+        const elapsed = timeMs - activeShootingStar.startTime;
+        const progress = elapsed / activeShootingStar.duration;
 
-          if (progress >= 1) {
-            activeShootingStar = null;
-          } else {
-            const currentDist = progress * 300;
-            const headX = activeShootingStar.startX + Math.cos(activeShootingStar.angle) * currentDist;
-            const headY = activeShootingStar.startY + Math.sin(activeShootingStar.angle) * currentDist;
-            const tailX = headX - Math.cos(activeShootingStar.angle) * activeShootingStar.length;
-            const tailY = headY - Math.sin(activeShootingStar.angle) * activeShootingStar.length;
+        if (progress >= 1) {
+          activeShootingStar = null;
+        } else {
+          const currentDist = progress * 300;
+          const headX = activeShootingStar.startX + Math.cos(activeShootingStar.angle) * currentDist;
+          const headY = activeShootingStar.startY + Math.sin(activeShootingStar.angle) * currentDist;
+          const tailX = headX - Math.cos(activeShootingStar.angle) * activeShootingStar.length;
+          const tailY = headY - Math.sin(activeShootingStar.angle) * activeShootingStar.length;
 
-            const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
-            const fade = Math.sin(progress * Math.PI); // fade in and out smoothly
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            grad.addColorStop(0.7, `rgba(201, 182, 255, ${0.4 * fade})`);
-            grad.addColorStop(1, `rgba(255, 255, 255, ${0.85 * fade})`);
+          const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
+          const fade = Math.sin(progress * Math.PI); // fade in and out smoothly
+          grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          grad.addColorStop(0.7, `rgba(201, 182, 255, ${0.4 * fade})`);
+          grad.addColorStop(1, `rgba(255, 255, 255, ${0.85 * fade})`);
 
-            ctx.save();
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(tailX, tailY);
-            ctx.lineTo(headX, headY);
-            ctx.stroke();
-            ctx.restore();
-          }
+          ctx.save();
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.stroke();
+          ctx.restore();
         }
       }
     };
@@ -298,11 +286,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
       animId = requestAnimationFrame(loop);
     };
 
-    if (prefersReducedMotion) {
-      drawFrame(0);
-    } else {
-      animId = requestAnimationFrame(loop);
-    }
+    animId = requestAnimationFrame(loop);
 
     // Page Visibility API to pause when hidden
     const handleVisibilityChange = () => {
@@ -311,7 +295,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
           cancelAnimationFrame(animId);
           animId = 0;
         }
-      } else if (!prefersReducedMotion && !animId) {
+      } else if (!animId) {
         animId = requestAnimationFrame(loop);
       }
     };
@@ -323,7 +307,7 @@ function StarFieldComponent({ total = 140 }: StarFieldProps) {
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [total, prefersReducedMotion]);
+  }, [total]);
 
   return (
     <canvas

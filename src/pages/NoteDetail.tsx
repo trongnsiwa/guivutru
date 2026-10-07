@@ -4,7 +4,6 @@ import { ArrowLeft, Lock, Calendar, Sparkles, Share2, Loader2, Check } from 'luc
 import { motion } from 'framer-motion';
 
 import { useNotes } from '@/hooks/useNotes';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { NotePaper } from '@/components/wish/NotePaper';
 import { CountdownBadge } from '@/components/wish/CountdownBadge';
 import { ShareCard } from '@/components/wish/ShareCard';
@@ -18,7 +17,6 @@ import { UnlockSequence } from './NoteDetail/UnlockSequence';
 export function NoteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const prefersReducedMotion = useReducedMotion();
 
   // Audit: select note and openNote action with focused selector
   const note = useNotes((s) => s.notes.find((n) => n.id === id));
@@ -132,12 +130,12 @@ export function NoteDetail() {
       <motion.div
         key={isSealed ? 'sealed' : 'opened'}
         initial={
-          prefersReducedMotion || isSealed
+          isSealed
             ? { opacity: 0 }
             : { opacity: 0, scale: 0.97 }
         }
         animate={
-          prefersReducedMotion || isSealed
+          isSealed
             ? { opacity: 1 }
             : { opacity: 1, scale: 1 }
         }

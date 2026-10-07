@@ -7,12 +7,10 @@ import { StarField } from '@/components/fx/StarField';
 import { NoiseOverlay } from '@/components/fx/NoiseOverlay';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { SyncPromptModal } from '@/components/auth/SyncPromptModal';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useAuth } from '@/hooks/useAuth';
 
 export function PageShell() {
   const location = useLocation();
-  const prefersReducedMotion = useReducedMotion();
   const initAuth = useAuth((s) => s.initAuth);
 
   useEffect(() => {
@@ -43,10 +41,10 @@ export function PageShell() {
         <div className="w-full max-w-[640px] flex-1 flex flex-col">
           <motion.div
             key={location.pathname}
-            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{
-              duration: prefersReducedMotion ? 0 : 0.18,
+              duration: 0.18,
               ease: [0.22, 1, 0.36, 1],
             }}
             className="flex-1 flex flex-col"

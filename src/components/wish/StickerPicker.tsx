@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { STICKERS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ScrollRow } from '@/components/ui/ScrollRow';
 
 export interface StickerPickerProps {
@@ -17,8 +16,6 @@ export function StickerPicker({
   onMaxReached,
   max = 3,
 }: StickerPickerProps) {
-  const prefersReducedMotion = useReducedMotion();
-
   const toggleSticker = (sticker: string) => {
     if (selected.includes(sticker)) {
       onChange(selected.filter((s) => s !== sticker));
@@ -40,7 +37,7 @@ export function StickerPicker({
             key={stk}
             type="button"
             onClick={() => toggleSticker(stk)}
-            whileTap={prefersReducedMotion ? undefined : { scale: 1.2 }}
+            whileTap={{ scale: 1.2 }}
             transition={{ type: 'spring', stiffness: 500, damping: 22, duration: 0.18 }}
             className={cn(
               'flex h-10 w-10 shrink-0 snap-start items-center justify-center rounded-xl border text-xl transition-all cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-lavender',

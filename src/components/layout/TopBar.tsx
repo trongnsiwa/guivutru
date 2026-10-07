@@ -5,7 +5,6 @@ import { BookOpen, Info, User, LogIn, LogOut } from 'lucide-react';
 import { MeteorShower } from '@/components/fx/MeteorShower';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/hooks/useAuth';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface TopBarProps {
   activePath?: string;
@@ -14,7 +13,6 @@ export interface TopBarProps {
 export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarProps) {
   const isToi = activePath === '/toi';
   const isAbout = activePath === '/gioi-thieu';
-  const prefersReducedMotion = useReducedMotion();
 
   const { user, openLoginModal, signOut } = useAuth();
   if (typeof window !== 'undefined') {
@@ -201,10 +199,7 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
             top: triggerRect.bottom + 8,
             right: Math.max(8, window.innerWidth - triggerRect.right),
           }}
-          className={cn(
-            'w-48 rounded-2xl border border-border-strong bg-[#241B47] p-1.5 shadow-glow backdrop-blur-md z-[100] text-xs font-sans',
-            prefersReducedMotion ? 'opacity-100' : 'animate-fade-in'
-          )}
+          className="w-48 rounded-2xl border border-border-strong bg-[#241B47] p-1.5 shadow-glow backdrop-blur-md z-[100] text-xs font-sans animate-fade-in"
         >
           {user ? (
             <>

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Moon } from 'lucide-react';
 import { Note } from '@/types/note';
 import { PAPER_THEMES, DEFAULT_EASING } from '@/lib/constants';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface UnlockSequenceProps {
   note: Note;
@@ -11,7 +10,6 @@ export interface UnlockSequenceProps {
 }
 
 export function UnlockSequence({ note, onComplete }: UnlockSequenceProps) {
-  const prefersReducedMotion = useReducedMotion();
   const theme = PAPER_THEMES.find((t) => t.id === note.paperTheme) || PAPER_THEMES[0];
 
   // Haptic feedback on mount (A5)
@@ -22,32 +20,6 @@ export function UnlockSequence({ note, onComplete }: UnlockSequenceProps) {
       // safe fallback
     }
   }, []);
-
-  // Reduced motion: show prose static for 1.5s then complete
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      const timer = setTimeout(() => {
-        onComplete();
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [prefersReducedMotion, onComplete]);
-
-  if (prefersReducedMotion) {
-    return (
-      <div className="relative w-full flex-1 flex flex-col items-center justify-center min-h-[400px] select-none py-12">
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="font-display text-[28px] sm:text-[32px] text-star-glow text-center px-4"
-        >
-          Bạn của ngày xưa gửi cho bạn một lá thư…
-        </motion.p>
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-full flex-1 flex flex-col items-center justify-center min-h-[460px] overflow-hidden select-none py-8">

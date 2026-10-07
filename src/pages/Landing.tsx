@@ -4,13 +4,11 @@ import { Moon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { MockNoteStack } from '@/components/wish/MockNoteStack';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useNotes } from '@/hooks/useNotes';
 import { Note } from '@/types/note';
 import { cn } from '@/lib/cn';
 
 function LandingComponent() {
-  const prefersReducedMotion = useReducedMotion();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -73,16 +71,16 @@ function LandingComponent() {
         {/* Floating Moon with soft outer glow pulse */}
         <div
           style={{
-            willChange: prefersReducedMotion ? undefined : 'transform',
-            animation: prefersReducedMotion ? undefined : 'moon-float 6s ease-in-out infinite',
+            willChange: 'transform',
+            animation: 'moon-float 6s ease-in-out infinite',
           }}
           className="relative inline-flex items-center justify-center"
         >
           {/* Outer glow pulse: opacity 0.4 -> 0.7 -> 0.4, 3s */}
           <div
             style={{
-              willChange: prefersReducedMotion ? undefined : 'transform, opacity',
-              animation: prefersReducedMotion ? undefined : 'glow-pulse 3s ease-in-out infinite',
+              willChange: 'transform, opacity',
+              animation: 'glow-pulse 3s ease-in-out infinite',
             }}
             className="absolute inset-0 rounded-full bg-lavender/30 blur-xl pointer-events-none"
           />
@@ -141,7 +139,7 @@ function LandingComponent() {
           to={`/note/${priorYearMatch.note.id}`}
           className={cn(
             'w-full max-w-xs mt-10 -mb-4 p-3.5 rounded-2xl bg-bg-soft/80 hover:bg-bg-elevated/90 border border-border-soft border-l-[3px] border-l-lavender shadow-sm flex items-center justify-between gap-3 text-left transition-all hover:scale-[1.01] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
-            prefersReducedMotion ? '' : 'animate-fade-in'
+            'animate-fade-in'
           )}
         >
           <div className="flex items-center gap-2.5">

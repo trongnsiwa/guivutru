@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Moon, Download, Home, PlusCircle, Loader2 } from 'lucide-react';
 
 import { useWriteStore } from '@/store/useWriteStore';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { formatDate, getDaysRemaining } from '@/lib/date';
 import { exportAndShareCard, preRenderCard, PreRenderedCard } from '@/lib/share';
 import { STORAGE_KEYS } from '@/lib/constants';
@@ -19,7 +18,6 @@ export type ShareState = 'idle' | 'rendering' | 'done' | 'error';
 
 export function Sealed() {
   const navigate = useNavigate();
-  const prefersReducedMotion = useReducedMotion();
   const reset = useWriteStore((state) => state.reset);
 
   const [lastSavedNote] = useState<Note | null>(() => {
@@ -40,7 +38,7 @@ export function Sealed() {
     return () => clearTimeout(timer);
   }, []);
 
-  const [isSequenceComplete, setIsSequenceComplete] = useState(prefersReducedMotion);
+  const [isSequenceComplete, setIsSequenceComplete] = useState(false);
   const [shareState, setShareState] = useState<ShareState>('idle');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -116,7 +114,7 @@ export function Sealed() {
     navigate('/viet');
   };
 
-  const showSuccess = isSequenceComplete || prefersReducedMotion;
+  const showSuccess = isSequenceComplete;
 
   return (
     <div className="w-full flex-1 flex flex-col items-center justify-center py-6 px-4">
@@ -131,10 +129,10 @@ export function Sealed() {
       ) : (
         /* Success Screen */
         <motion.div
-          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            duration: prefersReducedMotion ? 0.3 : 0.5,
+            duration: 0.5,
             ease: [0.22, 1, 0.36, 1],
           }}
           className="w-full max-w-[420px] mx-auto flex flex-col items-center text-center space-y-6"

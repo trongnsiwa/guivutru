@@ -1,7 +1,6 @@
 import React, { forwardRef } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/cn';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export type ButtonVariant = 'primary' | 'ghost' | 'pill' | 'icon';
 
@@ -12,8 +11,6 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref'> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', children, disabled, ...props }, ref) => {
-    const prefersReducedMotion = useReducedMotion();
-
     const variantsMap: Record<ButtonVariant, string> = {
       primary:
         'bg-lavender text-bg-deep font-semibold shadow-glow hover:brightness-110 active:brightness-95 rounded-md px-5 py-3',
@@ -28,8 +25,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
-        whileHover={prefersReducedMotion || disabled ? undefined : { scale: 1.03 }}
-        whileTap={prefersReducedMotion || disabled ? undefined : { scale: 0.96 }}
+        whileHover={disabled ? undefined : { scale: 1.03 }}
+        whileTap={disabled ? undefined : { scale: 0.96 }}
         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         disabled={disabled}
         className={cn(

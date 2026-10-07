@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface CursorSparklesProps {
   targetRef: React.RefObject<HTMLElement | null>;
@@ -25,7 +24,6 @@ const PASTEL_COLORS = [
 const MAX_MOTES = 12;
 
 export function CursorSparkles({ targetRef }: CursorSparklesProps) {
-  const prefersReducedMotion = useReducedMotion();
   const [motes, setMotes] = useState<Mote[]>([]);
   const nextIdRef = useRef(0);
   const lastSpawnTimeRef = useRef(0);
@@ -38,7 +36,7 @@ export function CursorSparkles({ targetRef }: CursorSparklesProps) {
       'ontouchstart' in window ||
       (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 
-    if (isTouch || prefersReducedMotion) return;
+    if (isTouch) return;
 
     const target = targetRef.current;
     if (!target) return;
@@ -116,9 +114,7 @@ export function CursorSparkles({ targetRef }: CursorSparklesProps) {
       target.removeEventListener('mousemove', handleMouseMove);
       target.removeEventListener('input', handleInput);
     };
-  }, [targetRef, prefersReducedMotion]);
-
-  if (prefersReducedMotion) return null;
+  }, [targetRef]);
 
   return (
     <div

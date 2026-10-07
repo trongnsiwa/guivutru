@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Note } from '@/types/note';
 import { PAPER_THEMES } from '@/lib/constants';
 import { formatDate } from '@/lib/date';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface ConstellationViewProps {
   notes: Note[];
@@ -22,7 +21,6 @@ interface StarNode {
 
 export function ConstellationView({ notes }: ConstellationViewProps) {
   const navigate = useNavigate();
-  const prefersReducedMotion = useReducedMotion();
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
 
   const VIEW_SIZE = 340;
@@ -138,7 +136,7 @@ export function ConstellationView({ notes }: ConstellationViewProps) {
             stroke={l.color}
             strokeWidth="1.2"
             strokeOpacity="0.3"
-            strokeDasharray={prefersReducedMotion ? undefined : '2 3'}
+            strokeDasharray="2 3"
           />
         ))}
       </svg>
@@ -181,7 +179,7 @@ export function ConstellationView({ notes }: ConstellationViewProps) {
                     height: `${s.size * 3}px`,
                     backgroundColor: s.color,
                     opacity: isHovered ? 0.35 : s.isSealed ? 0.08 : 0.2,
-                    transform: isHovered && !prefersReducedMotion ? 'scale(1.3)' : 'scale(1)',
+                    transform: isHovered ? 'scale(1.3)' : 'scale(1)',
                     boxShadow: !s.isSealed ? `0 0 10px ${s.color}` : undefined,
                   }}
                 />
@@ -194,7 +192,7 @@ export function ConstellationView({ notes }: ConstellationViewProps) {
                     height: `${s.size}px`,
                     backgroundColor: s.color,
                     opacity: s.opacity,
-                    transform: isHovered && !prefersReducedMotion ? 'scale(1.4)' : 'scale(1)',
+                    transform: isHovered ? 'scale(1.4)' : 'scale(1)',
                     boxShadow: `0 0 6px ${s.color}`,
                   }}
                 />

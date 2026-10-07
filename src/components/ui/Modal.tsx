@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -11,8 +10,6 @@ export interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  const prefersReducedMotion = useReducedMotion();
-
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,9 +34,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           />
 
           <motion.div
-            initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
-            animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
             className="relative z-10 w-full max-w-sm rounded-lg border border-border-soft bg-bg-elevated p-6 shadow-glow"
           >
             <div className="flex items-center justify-between pb-3 border-b border-border-soft">
