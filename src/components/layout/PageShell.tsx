@@ -5,6 +5,7 @@ import { TopBar } from './TopBar';
 import { Footer } from './Footer';
 import { StarField } from '@/components/fx/StarField';
 import { NoiseOverlay } from '@/components/fx/NoiseOverlay';
+import { CursorSparkles } from '@/components/fx/CursorSparkles';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { SyncPromptModal } from '@/components/auth/SyncPromptModal';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +33,7 @@ export function PageShell() {
       {/* Background FX - Persists across routes */}
       <StarField />
       <NoiseOverlay />
+      <CursorSparkles />
 
       {/* Navigation */}
       <TopBar activePath={location.pathname} />

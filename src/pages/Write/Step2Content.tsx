@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { NotePaper } from '@/components/wish/NotePaper';
 import { PaperPicker } from '@/components/wish/PaperPicker';
 import { StickerPicker } from '@/components/wish/StickerPicker';
-import { CursorSparkles } from '@/components/fx/CursorSparkles';
 import { PaperTheme } from '@/types/note';
 import { MAX_CONTENT_LENGTH } from '@/lib/constants';
 import { cn } from '@/lib/cn';
@@ -27,7 +26,6 @@ export function Step2Content({
   onStickerMaxReached,
 }: Step2ContentProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const paperWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -50,7 +48,7 @@ export function Step2Content({
 
       <div className="w-full max-w-[420px] space-y-4">
         {/* NotePaper in edit mode */}
-        <div ref={paperWrapperRef} className="relative">
+        <div className="relative">
           <NotePaper
             mode="edit"
             paperTheme={paperTheme}
@@ -61,7 +59,6 @@ export function Step2Content({
             placeholder="Vũ trụ đang chờ nghe bạn nói…"
             maxLength={MAX_CONTENT_LENGTH}
           />
-          <CursorSparkles targetRef={paperWrapperRef} />
         </div>
 
         {/* Character counter */}

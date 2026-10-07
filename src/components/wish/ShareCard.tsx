@@ -17,6 +17,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
     return (
       <div
         ref={ref}
+        data-share-card="true"
         style={{
           position: 'fixed',
           left: -9999,
@@ -30,7 +31,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
           ...style,
         }}
         className={cn(
-          'flex flex-col items-center justify-between text-center select-none overflow-hidden relative box-border border-[16px]',
+          'share-card flex flex-col items-center justify-between text-center select-none overflow-hidden relative box-border border-[16px]',
           className
         )}
       >

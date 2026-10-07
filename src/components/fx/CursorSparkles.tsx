@@ -1,8 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-
-interface CursorSparklesProps {
-  targetRef: React.RefObject<HTMLElement | null>;
-}
+import { useState, useEffect, useRef } from 'react';
 
 interface Mote {
   id: number;
@@ -21,16 +17,18 @@ const PASTEL_COLORS = [
   '#FFF9E6', // star-glow
 ];
 
-const MAX_MOTES = 12;
+const MAX_MOTES = 6;
+const THROTTLE_MS = 60;
+const MOTE_LIFETIME_MS = 400;
 
-export function CursorSparkles({ targetRef }: CursorSparklesProps) {
+export function CursorSparkles() {
   const [motes, setMotes] = useState<Mote[]>([]);
   const nextIdRef = useRef(0);
   const lastSpawnTimeRef = useRef(0);
-  const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 40, y: 60 });
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Desktop only: check touch support
+    // Desktop only guard: skip touch devices
     if (typeof window === 'undefined') return;
     const isTouch =
       'ontouchstart' in window ||
@@ -38,8 +36,10 @@ export function CursorSparkles({ targetRef }: CursorSparklesProps) {
 
     if (isTouch) return;
 
-    const target = targetRef.current;
-    if (!target) return;
+    // Skip effect entirely on /dev/share-card route
+    if (window.location.pathname.startsWith('/dev/share-card')) {
+      return;
+    }
 
     const spawnMote = (x: number, y: number) => {
       const newMote: Mote = {
@@ -55,70 +55,60 @@ export function CursorSparkles({ targetRef }: CursorSparklesProps) {
         return [...next, newMote];
       });
 
+      // Individual mote cleanup at 400ms
       setTimeout(() => {
         setMotes((prev) => prev.filter((m) => m.id !== newMote.id));
-      }, 400);
+      }, MOTE_LIFETIME_MS);
+
+      // Hard cap idle drain: if cursor stops moving, motes drain to 0 within 400ms
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      idleTimerRef.current = setTimeout(() => {
+        setMotes([]);
+      }, MOTE_LIFETIME_MS);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      const targetEl = targetRef.current;
-      if (!targetEl) return;
-      const rect = targetEl.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      lastMousePosRef.current = { x, y };
-
-      const now = performance.now();
-      // Throttle spawn to once every 40ms (~25 motes/sec max if moving fast)
-      if (now - lastSpawnTimeRef.current < 40) return;
-      lastSpawnTimeRef.current = now;
-
-      spawnMote(x, y);
-    };
-
-    const handleInput = () => {
-      const now = performance.now();
-      if (now - lastSpawnTimeRef.current < 30) return;
-      lastSpawnTimeRef.current = now;
-
-      const targetEl = targetRef.current;
-      if (!targetEl) return;
-      const textarea = targetEl.querySelector('textarea');
-      let x = lastMousePosRef.current.x;
-      let y = lastMousePosRef.current.y;
-
-      if (textarea) {
-        const rect = targetEl.getBoundingClientRect();
-        const tRect = textarea.getBoundingClientRect();
-        const pos = textarea.selectionStart || 0;
-        const textBefore = textarea.value.slice(0, pos);
-        const lines = textBefore.split('\n');
-        const lineIndex = lines.length - 1;
-        const currentLine = lines[lineIndex];
-
-        const approxCharWidth = 12;
-        const lineHeight = 36;
-        const caretX = tRect.left - rect.left + Math.min(currentLine.length * approxCharWidth + 6, tRect.width - 24);
-        const caretY = tRect.top - rect.top + lineIndex * lineHeight + 20;
-        x = caretX + (Math.random() * 12 - 6);
-        y = caretY + (Math.random() * 12 - 6);
+      // Dynamic route guard in case of client route transitions
+      if (window.location.pathname.startsWith('/dev/share-card')) {
+        return;
       }
 
-      spawnMote(x, y);
+      // Suppress motes when hovering over modal backdrop, modal dialog, or ShareCard
+      const target = e.target as HTMLElement | null;
+      if (
+        document.querySelector('.fixed.inset-0.z-50, [data-modal="true"]') ||
+        target?.closest(
+          '.fixed.inset-0.z-50, [role="dialog"], [data-modal], [data-share-card], .share-card'
+        )
+      ) {
+        return;
+      }
+
+      const now = performance.now();
+      // Throttle spawn to ~60ms
+      if (now - lastSpawnTimeRef.current < THROTTLE_MS) return;
+      lastSpawnTimeRef.current = now;
+
+      // Viewport coordinates
+      spawnMote(e.clientX, e.clientY);
     };
 
-    target.addEventListener('mousemove', handleMouseMove, { passive: true });
-    target.addEventListener('input', handleInput, { passive: true });
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     return () => {
-      target.removeEventListener('mousemove', handleMouseMove);
-      target.removeEventListener('input', handleInput);
+      document.removeEventListener('mousemove', handleMouseMove);
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
     };
-  }, [targetRef]);
+  }, []);
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden z-20"
+      data-testid="cursor-sparkles-container"
+      className="pointer-events-none fixed inset-0 overflow-hidden z-20"
       aria-hidden="true"
     >
       {motes.map((mote) => (
