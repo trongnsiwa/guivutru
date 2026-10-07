@@ -22,7 +22,16 @@ export const SyncPromptModal: React.FC = () => {
     try {
       const result = await confirmSyncLocalNotes(true);
       if (result.success) {
-        setToastMessage('Đã đồng bộ điều ước của bạn lên đám mây thành công ✨');
+        if (result.conflictCopiesCount && result.conflictCopiesCount > 0) {
+          const c = result.conflictCopiesCount;
+          setToastMessage(
+            c === 1
+              ? 'Đã đồng bộ xong! Mình đã lưu lại 1 bản sao xung đột trên máy này cho bạn nha 🌙'
+              : `Đã đồng bộ xong! Mình đã lưu lại ${c} bản sao xung đột trên máy này cho bạn nha 🌙`
+          );
+        } else {
+          setToastMessage('Đã đồng bộ điều ước của bạn lên đám mây thành công ✨');
+        }
         setToastVisible(true);
       } else {
         const detail = result.error ? `: ${result.error}` : '';

@@ -7,6 +7,7 @@ export interface SyncResult {
   success: boolean;
   uploadedCount: number;
   downloadedCount: number;
+  conflictCopiesCount?: number;
   error?: string;
 }
 
@@ -30,6 +31,7 @@ export function resolveNoteMerge(
 ): {
   mergedNotes: Note[];
   notesToUpload: Note[];
+  conflictCopiesCount: number;
 } {
   const cloudById = new Map<string, Note>();
   for (const c of cloudNotes) {
@@ -39,6 +41,7 @@ export function resolveNoteMerge(
   const merged: Note[] = [];
   const notesToUpload: Note[] = [];
   const processedCloudIds = new Set<string>();
+  let conflictCopiesCount = 0;
 
   for (const local of localNotes) {
     const cloudMatch = local.serverId
@@ -70,6 +73,36 @@ export function resolveNoteMerge(
     const cloudTimestamp = cloudMatch.updatedAt || cloudMatch.createdAt || 0;
 
     if (cloudTimestamp >= localTimestamp) {
+      // FIX 4: Conflict case: same note modified on both devices.
+      // Before overwriting, if local content differs from cloud content, create a local conflict copy.
+      // A new local-only note with content prefixed "[Bản sao xung đột] " and original local content,
+      // status = 'opened', unlock_at = now, no server_id. It stays local only — never uploads.
+      const localContentTrimmed = (local.content || '').trim();
+      const cloudContentTrimmed = (cloudMatch.content || '').trim();
+
+      if (
+        localContentTrimmed &&
+        cloudContentTrimmed &&
+        localContentTrimmed !== cloudContentTrimmed
+      ) {
+        const conflictCopy: Note = {
+          id: `conflict_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          content: `[Bản sao xung đột] ${local.content}`,
+          promptId: local.promptId,
+          paperTheme: local.paperTheme,
+          stickerIds: [...local.stickerIds],
+          unlockAt: Date.now(),
+          status: 'opened',
+          visibility: 'private',
+          createdAt: Date.now(),
+          openedAt: Date.now(),
+          updatedAt: Date.now(),
+          // No serverId -> stays local only, never uploaded
+        };
+        merged.push(conflictCopy);
+        conflictCopiesCount++;
+      }
+
       // Server wins. If cloud content was masked (sealed), retain local content if available.
       const resolvedContent = cloudMatch.content || local.content || '';
       merged.push({
@@ -93,7 +126,7 @@ export function resolveNoteMerge(
   // Sort descending by createdAt
   merged.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-  return { mergedNotes: merged, notesToUpload };
+  return { mergedNotes: merged, notesToUpload, conflictCopiesCount };
 }
 
 /**
@@ -285,7 +318,7 @@ export async function syncNotesWithCloud(
     const cloudNotes = await fetchUserCloudNotes();
     const localNotes = storage.getNotes();
 
-    const { mergedNotes, notesToUpload } = resolveNoteMerge(
+    const { mergedNotes, notesToUpload, conflictCopiesCount } = resolveNoteMerge(
       localNotes,
       cloudNotes,
       options.uploadLocalNotes
@@ -318,6 +351,7 @@ export async function syncNotesWithCloud(
         success: false,
         uploadedCount: 0,
         downloadedCount: cloudNotes.length,
+        conflictCopiesCount,
         error: errors[0],
       };
     }
@@ -328,6 +362,7 @@ export async function syncNotesWithCloud(
       success: true,
       uploadedCount,
       downloadedCount: cloudNotes.length,
+      conflictCopiesCount,
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

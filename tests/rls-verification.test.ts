@@ -25,13 +25,95 @@ interface DBRow {
 
 class PostgresPostgrestSimulator {
   private baseTable: DBRow[] = [];
+  private reportsTable: Array<{ id: string; note_id: string; reporter_user_id: string | null; reason: string }> = [];
 
-  insert(callerUserId: string, row: DBRow) {
+  insert(callerUserId: string, row: DBRow, nowMs: number = Date.now()) {
     // Policy: "Users can insert own notes" WITH CHECK (auth.uid() = user_id)
     if (callerUserId !== row.user_id) {
       throw new Error('RLS violation: insert denied for non-owner');
     }
-    this.baseTable.push({ ...row });
+
+    // FIX 2: Hardened handle_notes_insert & tr_notes_base_seal_integrity:
+    // If unlock_at > now(), status is FORCED to 'sealed' regardless of what client sent
+    const isFuture = new Date(row.unlock_at).getTime() > nowMs;
+    const finalStatus: 'sealed' | 'opened' = isFuture ? 'sealed' : row.status;
+
+    this.baseTable.push({
+      ...row,
+      status: finalStatus,
+      opened_at: finalStatus === 'opened' ? (row.opened_at || new Date(nowMs).toISOString()) : null,
+    });
+  }
+
+  /**
+   * Simulates updating via the public.notes view (handled by handle_notes_update)
+   */
+  updateNotesView(
+    callerUserId: string,
+    targetNoteId: string,
+    patch: Partial<DBRow>,
+    nowMs: number = Date.now()
+  ) {
+    const existing = this.baseTable.find(
+      (r) => r.id === targetNoteId && r.user_id === callerUserId && !r.is_deleted
+    );
+
+    if (!existing) {
+      throw new Error('Note not found');
+    }
+
+    // FIX 1: Reject altering unlock_at while sealed and unlock_at is in future
+    if (existing.status === 'sealed' && new Date(existing.unlock_at).getTime() > nowMs) {
+      if (patch.unlock_at !== undefined && patch.unlock_at !== existing.unlock_at) {
+        throw new Error('Cannot modify unlock date of a sealed note before unlock time');
+      }
+    }
+
+    // FIX 1: Reject transitioning status to 'opened' before unlock_at
+    const targetUnlockAt = patch.unlock_at !== undefined ? patch.unlock_at : existing.unlock_at;
+    if (patch.status === 'opened' && new Date(targetUnlockAt).getTime() > nowMs) {
+      throw new Error('Cannot open a sealed note before unlock_at');
+    }
+
+    // Apply allowed fields
+    Object.assign(existing, patch);
+    existing.updated_at = new Date(nowMs).toISOString();
+    return { ...existing };
+  }
+
+  /**
+   * Simulates direct INSERT on public.reports.
+   * FIX 5: REVOKE INSERT ON public.reports FROM anon, authenticated
+   */
+  directInsertReports(_callerUserId: string | null, _report: any) {
+    throw new Error('Permission denied: direct INSERT on public.reports is revoked.');
+  }
+
+  /**
+   * Simulates public.report_note(p_note_id, p_reason) RPC (SECURITY DEFINER)
+   */
+  reportNoteRPC(callerUserId: string | null, noteId: string, reason: string = 'Inappropriate content') {
+    const note = this.baseTable.find((r) => r.id === noteId && !r.is_deleted);
+    if (!note) {
+      throw new Error('Note not found');
+    }
+
+    if (callerUserId && note.user_id === callerUserId) {
+      throw new Error('Cannot report your own note');
+    }
+
+    if (callerUserId && this.reportsTable.some((r) => r.note_id === noteId && r.reporter_user_id === callerUserId)) {
+      throw new Error('Already reported');
+    }
+
+    this.reportsTable.push({
+      id: `rep_${Date.now()}`,
+      note_id: noteId,
+      reporter_user_id: callerUserId,
+      reason,
+    });
+
+    return true;
   }
 
   /**
@@ -200,14 +282,14 @@ describe('RLS & View Security Verification (§2.4 - Load-Bearing Rule)', () => {
     assert.strictEqual(results[0].content, 'Điều ước ngày ấy: Đã tốt nghiệp thủ khoa!');
   });
 
-  it('TEST 5: Opened note returns content regardless of unlock_at', () => {
+  it('TEST 5: Attempting to insert a note with status=opened and future unlock_at forces status=sealed', () => {
     const db = new PostgresPostgrestSimulator();
 
     db.insert(OWNER_ID, {
-      id: 'note_opened_1',
+      id: 'note_opened_exploit_attempt',
       user_id: OWNER_ID,
       device_id: 'dev_1',
-      content: 'Lá thư đã mở',
+      content: 'Nội dung bí mật tương lai',
       prompt_id: null,
       paper_theme: 'bien',
       sticker_ids: [],
@@ -218,11 +300,12 @@ describe('RLS & View Security Verification (§2.4 - Load-Bearing Rule)', () => {
       opened_at: new Date(NOW - 2000).toISOString(),
       updated_at: new Date(NOW - 2000).toISOString(),
       is_deleted: false,
-    });
+    }, NOW);
 
     const results = db.selectNotesView(OWNER_ID, NOW);
     assert.strictEqual(results.length, 1);
-    assert.strictEqual(results[0].content, 'Lá thư đã mở');
+    assert.strictEqual(results[0].status, 'sealed', 'Status MUST be coerced to sealed on future unlock');
+    assert.strictEqual(results[0].content, null, 'Content MUST remain masked (null) before unlock_at');
   });
 
   it('TEST 6: Soft-deleted note (is_deleted = true) is hidden from select', () => {
@@ -243,9 +326,108 @@ describe('RLS & View Security Verification (§2.4 - Load-Bearing Rule)', () => {
       opened_at: new Date(NOW - 2000).toISOString(),
       updated_at: new Date(NOW - 1000).toISOString(),
       is_deleted: true,
-    });
+    }, NOW);
 
     const results = db.selectNotesView(OWNER_ID, NOW);
     assert.strictEqual(results.length, 0, 'Soft deleted note must not be returned');
+  });
+
+  it('TEST 7: FIX 1 - PATCH status to opened on sealed note before unlock_at is rejected', () => {
+    const db = new PostgresPostgrestSimulator();
+
+    db.insert(OWNER_ID, {
+      id: 'note_sealed_exploit',
+      user_id: OWNER_ID,
+      device_id: 'dev_1',
+      content: 'Tuyệt mật không ai được xem',
+      prompt_id: null,
+      paper_theme: 'dem-sao',
+      sticker_ids: [],
+      unlock_at: FUTURE_UNLOCK,
+      status: 'sealed',
+      visibility: 'private',
+      created_at: new Date(NOW).toISOString(),
+      opened_at: null,
+      updated_at: new Date(NOW).toISOString(),
+      is_deleted: false,
+    }, NOW);
+
+    assert.throws(
+      () => db.updateNotesView(OWNER_ID, 'note_sealed_exploit', { status: 'opened' }, NOW),
+      /Cannot open a sealed note before unlock_at/
+    );
+
+    // Confirm content remains null
+    const results = db.selectNotesView(OWNER_ID, NOW);
+    assert.strictEqual(results[0].content, null);
+    assert.strictEqual(results[0].status, 'sealed');
+  });
+
+  it('TEST 8: FIX 1 - PATCH unlock_at on sealed note to backdate it is rejected', () => {
+    const db = new PostgresPostgrestSimulator();
+
+    db.insert(OWNER_ID, {
+      id: 'note_sealed_backdate',
+      user_id: OWNER_ID,
+      device_id: 'dev_1',
+      content: 'Nội dung không thể mở sớm',
+      prompt_id: null,
+      paper_theme: 'dem-sao',
+      sticker_ids: [],
+      unlock_at: FUTURE_UNLOCK,
+      status: 'sealed',
+      visibility: 'private',
+      created_at: new Date(NOW).toISOString(),
+      opened_at: null,
+      updated_at: new Date(NOW).toISOString(),
+      is_deleted: false,
+    }, NOW);
+
+    assert.throws(
+      () => db.updateNotesView(OWNER_ID, 'note_sealed_backdate', { unlock_at: PAST_UNLOCK }, NOW),
+      /Cannot modify unlock date of a sealed note before unlock time/
+    );
+
+    // Confirm content remains null
+    const results = db.selectNotesView(OWNER_ID, NOW);
+    assert.strictEqual(results[0].content, null);
+    assert.strictEqual(results[0].status, 'sealed');
+  });
+
+  it('TEST 9: FIX 5 - Direct INSERT on public.reports is rejected; report_note RPC works with auth bind', () => {
+    const db = new PostgresPostgrestSimulator();
+
+    db.insert(OWNER_ID, {
+      id: 'public_note_1',
+      user_id: OWNER_ID,
+      device_id: 'dev_1',
+      content: 'Public note content',
+      prompt_id: null,
+      paper_theme: 'dem-sao',
+      sticker_ids: [],
+      unlock_at: PAST_UNLOCK,
+      status: 'opened',
+      visibility: 'public',
+      created_at: new Date(NOW).toISOString(),
+      opened_at: new Date(NOW).toISOString(),
+      updated_at: new Date(NOW).toISOString(),
+      is_deleted: false,
+    }, NOW);
+
+    // Direct INSERT on reports table is revoked
+    assert.throws(
+      () => db.directInsertReports(STRANGER_ID, { note_id: 'public_note_1', reporter_user_id: OWNER_ID }),
+      /Permission denied: direct INSERT on public.reports is revoked/
+    );
+
+    // Reporting via RPC works
+    const rpcRes = db.reportNoteRPC(STRANGER_ID, 'public_note_1', 'Spam');
+    assert.strictEqual(rpcRes, true);
+
+    // Cannot report own note via RPC
+    assert.throws(
+      () => db.reportNoteRPC(OWNER_ID, 'public_note_1'),
+      /Cannot report your own note/
+    );
   });
 });

@@ -51,15 +51,16 @@ export function computeYearInReview(notes: Note[]): YearInReviewStats {
     : 0;
 
   // 5. Featured wish ("điều ước của năm")
-  // Pick opened note with longest meaningful content, or first opened note, or first note
-  const openedNotes = activeNotes.filter((n) => n.status === 'opened' && n.content);
-  const candidates = openedNotes.length > 0 ? openedNotes : activeNotes;
-  const featuredWish = candidates.reduce((best, curr) => {
-    if (!best) return curr;
-    const lenCurr = (curr.content || '').length;
-    const lenBest = (best.content || '').length;
-    return lenCurr > lenBest ? curr : best;
-  }, candidates[0] || null);
+  // Only opened notes with content are eligible. Sealed notes must NEVER be selected (§2.4).
+  const openedNotes = activeNotes.filter((n) => n.status === 'opened' && Boolean(n.content));
+  const featuredWish = openedNotes.length > 0
+    ? openedNotes.reduce((best, curr) => {
+        if (!best) return curr;
+        const lenCurr = (curr.content || '').length;
+        const lenBest = (best.content || '').length;
+        return lenCurr > lenBest ? curr : best;
+      }, openedNotes[0])
+    : null;
 
   return {
     isEligible,

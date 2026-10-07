@@ -9,11 +9,14 @@ import { CursorSparkles } from '@/components/fx/CursorSparkles';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { SyncPromptModal } from '@/components/auth/SyncPromptModal';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { Toast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks/useAuth';
 
 export function PageShell() {
   const location = useLocation();
   const initAuth = useAuth((s) => s.initAuth);
+  const syncToastMessage = useAuth((s) => s.syncToastMessage);
+  const clearSyncToast = useAuth((s) => s.clearSyncToast);
 
   useEffect(() => {
     initAuth();
@@ -61,6 +64,14 @@ export function PageShell() {
       <LoginModal />
       <SyncPromptModal />
       <InstallPrompt />
+
+      {/* Global Sync Notification Toast */}
+      <Toast
+        message={syncToastMessage || ''}
+        visible={Boolean(syncToastMessage)}
+        onClose={clearSyncToast}
+        duration={4000}
+      />
 
       {/* Screen reader route change announcement */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">

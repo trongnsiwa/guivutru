@@ -97,17 +97,69 @@ describe('Local-First Sync & Conflict Resolution (§2.5)', () => {
       updatedAt: 2000, // Newer
     };
 
-    const { mergedNotes, notesToUpload } = resolveNoteMerge(
+    const { mergedNotes, notesToUpload, conflictCopiesCount } = resolveNoteMerge(
+      [existingLocal],
+      [newerCloud],
+      false
+    );
+
+    // FIX 4: Server wins for primary note, AND losing version survives as local conflict copy
+    assert.strictEqual(mergedNotes.length, 2, 'Must retain server note AND conflict copy note');
+    assert.strictEqual(conflictCopiesCount, 1, 'Must record 1 conflict copy created');
+    
+    // Server winner
+    const serverWonNote = mergedNotes.find((n) => n.id === 'note_shared')!;
+    assert.strictEqual(serverWonNote.updatedAt, 2000);
+    assert.strictEqual(serverWonNote.paperTheme, 'bien');
+    assert.strictEqual(serverWonNote.status, 'opened');
+
+    // Conflict survivor copy
+    const conflictNote = mergedNotes.find((n) => n.id.startsWith('conflict_'))!;
+    assert.ok(conflictNote, 'Local conflict copy must exist');
+    assert.strictEqual(conflictNote.content, '[Bản sao xung đột] Local text');
+    assert.strictEqual(conflictNote.status, 'opened');
+    assert.strictEqual(conflictNote.serverId, undefined, 'Must be local-only without serverId');
+
+    assert.strictEqual(notesToUpload.length, 0, 'No notes queued for upload');
+  });
+
+  it('RULE 4b: If local and cloud content are identical, no conflict copy is created', () => {
+    const existingLocal: Note = {
+      id: 'note_shared',
+      serverId: 'note_shared',
+      content: 'Identical text',
+      promptId: null,
+      paperTheme: 'dem-sao',
+      stickerIds: [],
+      unlockAt: Date.now() + 100000,
+      status: 'sealed',
+      createdAt: 1000,
+      openedAt: null,
+      updatedAt: 1500, // Older
+    };
+
+    const newerCloud: Note = {
+      id: 'note_shared',
+      serverId: 'note_shared',
+      content: 'Identical text',
+      promptId: null,
+      paperTheme: 'bien',
+      stickerIds: ['🌙'],
+      unlockAt: Date.now() + 100000,
+      status: 'opened',
+      createdAt: 1000,
+      openedAt: 1800,
+      updatedAt: 2000, // Newer
+    };
+
+    const { mergedNotes, conflictCopiesCount } = resolveNoteMerge(
       [existingLocal],
       [newerCloud],
       false
     );
 
     assert.strictEqual(mergedNotes.length, 1);
-    assert.strictEqual(mergedNotes[0].updatedAt, 2000);
-    assert.strictEqual(mergedNotes[0].paperTheme, 'bien');
-    assert.strictEqual(mergedNotes[0].status, 'opened');
-    assert.strictEqual(notesToUpload.length, 0);
+    assert.strictEqual(conflictCopiesCount, 0);
   });
 
   it('RULE 5: Conflict resolution — local wins when local has newer edits and queues upload', () => {

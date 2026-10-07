@@ -103,23 +103,37 @@ export const YearInReviewCard = forwardRef<HTMLDivElement, YearInReviewCardProps
             <span className="font-sans text-[22px] uppercase tracking-widest text-star-glow font-semibold">
               ✦ Điều ước của năm ✦
             </span>
-            <p
-              className="font-note font-normal text-[48px] leading-[1.4] text-text-primary px-4 max-h-[340px] overflow-hidden"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              "{wish?.content?.trim() || 'Mong tâm hồn luôn bình yên giữa vũ trụ bao la.'}"
-            </p>
-            {wish?.stickerIds && wish.stickerIds.length > 0 && (
-              <div className="flex items-center justify-center gap-3 pt-2 text-[48px]">
-                {wish.stickerIds.map((s, idx) => (
-                  <span key={idx}>{s}</span>
-                ))}
+            {wish && wish.content ? (
+              <>
+                <p
+                  className="font-note font-normal text-[48px] leading-[1.4] text-text-primary px-4 max-h-[340px] overflow-hidden"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  "{wish.content.trim()}"
+                </p>
+                {wish.stickerIds && wish.stickerIds.length > 0 && (
+                  <div className="flex items-center justify-center gap-3 pt-2 text-[48px]">
+                    {wish.stickerIds.map((s, idx) => (
+                      <span key={idx}>{s}</span>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                <span className="text-[64px] select-none">🔒</span>
+                <p className="font-sans font-normal text-[32px] leading-relaxed text-text-secondary px-8">
+                  Các điều ước vẫn đang được niêm phong cẩn thận.
+                </p>
+                <p className="font-sans text-[24px] text-text-muted">
+                  Hẹn ngày mở ra cùng nhau dưới trời sao ✨
+                </p>
               </div>
             )}
           </div>

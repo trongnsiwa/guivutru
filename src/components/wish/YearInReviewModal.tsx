@@ -69,16 +69,21 @@ export function YearInReviewModal({ isOpen, onClose, stats }: YearInReviewModalP
             </div>
           </div>
 
-          {stats.featuredWish && (
-            <div className="rounded-xl bg-white/5 p-3 border border-border-soft/60 space-y-1">
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-star-glow block">
-                ✦ Điều ước của năm ✦
-              </span>
+          <div className="rounded-xl bg-white/5 p-3 border border-border-soft/60 space-y-1">
+            <span className="text-[10px] uppercase font-semibold tracking-wider text-star-glow block">
+              ✦ Điều ước của năm ✦
+            </span>
+            {stats.featuredWish ? (
               <p className="font-note text-sm text-text-primary line-clamp-3 italic">
                 "{stats.featuredWish.content || '...'}"
               </p>
-            </div>
-          )}
+            ) : (
+              <p className="font-sans text-xs text-text-secondary flex items-center justify-center gap-1.5 py-1">
+                <span className="select-none">🔒</span>
+                <span>Các điều ước đang được niêm phong cẩn thận.</span>
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Action buttons */}

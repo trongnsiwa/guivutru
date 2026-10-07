@@ -147,6 +147,7 @@
 | P-11 | Footer color contrast below WCAG AA (3.49:1 on nav links, 2.30:1 on tagline) | 🟡 P1 | Closed (see Fix 1)                                     |
 | P-12 | meta-viewport blocks user zoom                                           | 🟡 P1    | Closed (see Fix 2)                                     |
 | P-13 | Intermittent CLS on live / (0.18–0.20 in ~40% of loads)                   | 🟡 P1    | Closed (see Fix — font fallback overrides + display preload) |
+| SEC-01 | Supabase Auth Provider Configuration (Manual Dashboard Action) | 🟡 P1 | Open — Disable Email/Password provider and all OAuth providers in Supabase production and staging dashboards (enforce magic-link OTP only per V2.md §12 decision 3). |
 
 ---
 

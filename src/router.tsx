@@ -15,6 +15,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 const DevFonts = lazy(() => import('@/pages/DevFonts'));
 const DevShareCard = lazy(() => import('@/pages/DevShareCard'));
 const DevSealedSuccess = lazy(() => import('@/pages/DevSealedSuccess'));
+const DevYearInReviewCard = lazy(() => import('@/pages/DevYearInReviewCard'));
 
 function withSuspense(Component: React.ComponentType) {
   return (
@@ -50,6 +51,10 @@ const devStandaloneRoutes = import.meta.env.DEV
       {
         path: 'dev/share-card',
         element: withSuspense(DevShareCard),
+      },
+      {
+        path: 'dev/year-in-review-card',
+        element: withSuspense(DevYearInReviewCard),
       },
     ]
   : [];

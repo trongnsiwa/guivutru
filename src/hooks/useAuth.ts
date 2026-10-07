@@ -13,6 +13,8 @@ interface AuthState {
   localNotesCount: number;
   authError: string | null;
   authSuccess: boolean;
+  syncToastMessage: string | null;
+  clearSyncToast: () => void;
   openLoginModal: () => void;
   closeLoginModal: () => void;
   dismissSyncPrompt: () => void;
@@ -31,6 +33,11 @@ export const useAuth = create<AuthState>((set, get) => ({
   localNotesCount: 0,
   authError: null,
   authSuccess: false,
+  syncToastMessage: null,
+
+  clearSyncToast: () => {
+    set({ syncToastMessage: null });
+  },
 
   openLoginModal: () => {
     set({ showLoginModal: true, authError: null, authSuccess: false });
@@ -45,8 +52,17 @@ export const useAuth = create<AuthState>((set, get) => ({
     // Still sync existing cloud notes down without uploading local notes
     const { user } = get();
     if (user) {
-      syncNotesWithCloud(user.id, { uploadLocalNotes: false }).then(() => {
+      syncNotesWithCloud(user.id, { uploadLocalNotes: false }).then((res) => {
         useNotes.getState().loadNotes();
+        if (res.conflictCopiesCount && res.conflictCopiesCount > 0) {
+          const c = res.conflictCopiesCount;
+          set({
+            syncToastMessage:
+              c === 1
+                ? 'Đã đồng bộ xong! Mình đã lưu lại 1 bản sao xung đột trên máy này cho bạn nha 🌙'
+                : `Đã đồng bộ xong! Mình đã lưu lại ${c} bản sao xung đột trên máy này cho bạn nha 🌙`,
+          });
+        }
       });
     }
   },
@@ -62,6 +78,15 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (result.success) {
       set({ showSyncPrompt: false });
       useNotes.getState().loadNotes();
+      if (result.conflictCopiesCount && result.conflictCopiesCount > 0) {
+        const c = result.conflictCopiesCount;
+        set({
+          syncToastMessage:
+            c === 1
+              ? 'Đã đồng bộ xong! Mình đã lưu lại 1 bản sao xung đột trên máy này cho bạn nha 🌙'
+              : `Đã đồng bộ xong! Mình đã lưu lại ${c} bản sao xung đột trên máy này cho bạn nha 🌙`,
+        });
+      }
     }
     // If not successful, do not close showSyncPrompt so the user sees the modal and error toast
 
@@ -141,8 +166,17 @@ export const useAuth = create<AuthState>((set, get) => ({
           set({ showSyncPrompt: true, localNotesCount: localOnly.length });
         } else {
           // No local-only notes, sync server notes directly
-          syncNotesWithCloud(user.id, { uploadLocalNotes: false }).then(() => {
+          syncNotesWithCloud(user.id, { uploadLocalNotes: false }).then((res) => {
             useNotes.getState().loadNotes();
+            if (res.conflictCopiesCount && res.conflictCopiesCount > 0) {
+              const c = res.conflictCopiesCount;
+              set({
+                syncToastMessage:
+                  c === 1
+                    ? 'Đã đồng bộ xong! Mình đã lưu lại 1 bản sao xung đột trên máy này cho bạn nha 🌙'
+                    : `Đã đồng bộ xong! Mình đã lưu lại ${c} bản sao xung đột trên máy này cho bạn nha 🌙`,
+              });
+            }
           });
         }
       }
@@ -159,8 +193,17 @@ export const useAuth = create<AuthState>((set, get) => ({
           // Prompt user first
           set({ showSyncPrompt: true, localNotesCount: localOnly.length });
         } else {
-          await syncNotesWithCloud(user.id, { uploadLocalNotes: false });
+          const res = await syncNotesWithCloud(user.id, { uploadLocalNotes: false });
           useNotes.getState().loadNotes();
+          if (res.conflictCopiesCount && res.conflictCopiesCount > 0) {
+            const c = res.conflictCopiesCount;
+            set({
+              syncToastMessage:
+                c === 1
+                  ? 'Đã đồng bộ xong! Mình đã lưu lại 1 bản sao xung đột trên máy này cho bạn nha 🌙'
+                  : `Đã đồng bộ xong! Mình đã lưu lại ${c} bản sao xung đột trên máy này cho bạn nha 🌙`,
+            });
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         purgeCloudNotesFromLocal();
