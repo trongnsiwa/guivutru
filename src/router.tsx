@@ -8,6 +8,9 @@ const Sealed = lazy(() => import('@/pages/Sealed'));
 const MyCorner = lazy(() => import('@/pages/MyCorner'));
 const NoteDetail = lazy(() => import('@/pages/NoteDetail'));
 const About = lazy(() => import('@/pages/About'));
+const Sky = lazy(() => import('@/pages/Sky'));
+const MySky = lazy(() => import('@/pages/Sky/MySky'));
+const AdminReports = lazy(() => import('@/pages/Admin/Reports'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const DevFonts = lazy(() => import('@/pages/DevFonts'));
 const DevShareCard = lazy(() => import('@/pages/DevShareCard'));
@@ -79,6 +82,18 @@ export const router = createBrowserRouter([
       {
         path: 'gioi-thieu',
         element: withSuspense(About),
+      },
+      {
+        path: 'bau-troi',
+        element: withSuspense(Sky),
+      },
+      {
+        path: 'bau-troi/cua-toi',
+        element: withSuspense(MySky),
+      },
+      {
+        path: 'admin/bao-cao',
+        element: withSuspense(AdminReports),
       },
       ...devAppRoutes,
       {

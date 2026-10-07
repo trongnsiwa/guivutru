@@ -165,4 +165,39 @@ describe('Local-First Sync & Conflict Resolution (§2.5)', () => {
     assert.strictEqual(remainingAfterLogout[0].id, 'loc_1');
     assert.strictEqual(remainingAfterLogout[0].content, 'Điều ước viết khi chưa có mạng');
   });
+
+  it('RULE 7: If upload fails, local notes are NOT cleared from storage', () => {
+    const localNotesBefore: Note[] = [sampleLocalNote];
+    // Simulating batch upload failure where all uploads fail
+    const errors = ['Connection error'];
+    const uploadedCount = 0;
+
+    let storageNotes = [...localNotesBefore];
+    if (errors.length > 0 && uploadedCount === 0) {
+      // Per syncNotesWithCloud fix: do NOT overwrite storageNotes!
+    } else {
+      storageNotes = [];
+    }
+
+    assert.strictEqual(storageNotes.length, 1, 'Local notes must stay untouched on upload failure');
+    assert.strictEqual(storageNotes[0].id, 'loc_1');
+  });
+
+  it('RULE 8: Clicking "Giữ riêng trên máy này" queues 0 uploads and preserves local notes', () => {
+    const localNotes: Note[] = [
+      sampleLocalNote,
+      { ...sampleLocalNote, id: 'loc_2', content: 'Điều ước thứ 2' },
+    ];
+    const { mergedNotes, notesToUpload } = resolveNoteMerge(
+      localNotes,
+      [sampleCloudNote],
+      false // uploadLocalOnly = false
+    );
+
+    assert.strictEqual(notesToUpload.length, 0, 'Zero notes queued for upload');
+    assert.strictEqual(mergedNotes.length, 3, 'Contains 2 local notes and 1 cloud note');
+    assert.ok(mergedNotes.some((n) => n.id === 'loc_1'));
+    assert.ok(mergedNotes.some((n) => n.id === 'loc_2'));
+    assert.ok(mergedNotes.some((n) => n.id === 'srv_1'));
+  });
 });

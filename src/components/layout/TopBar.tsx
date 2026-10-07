@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { BookOpen, Info, User, LogIn, LogOut } from 'lucide-react';
+import { BookOpen, Info, User, LogIn, LogOut, Sparkles } from 'lucide-react';
 import { MeteorShower } from '@/components/fx/MeteorShower';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,7 @@ export interface TopBarProps {
 
 export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarProps) {
   const isToi = activePath === '/toi';
+  const isSky = activePath === '/bau-troi' || activePath === '/bau-troi/cua-toi';
   const isAbout = activePath === '/gioi-thieu';
 
   const { user, openLoginModal, signOut } = useAuth();
@@ -98,11 +99,11 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-bg-deep/70 border-b border-border-soft/50">
-      <div className="mx-auto flex h-16 max-w-[430px] items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-3 sm:px-4">
         {/* Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2.5 group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
+          className="flex items-center gap-2 group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender"
         >
           {/* 32px circular badge with crescent moon + tiny star */}
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-soft border border-border-soft shadow-glow group-hover:scale-105 transition-transform text-lavender shrink-0">
@@ -130,26 +131,42 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
             </svg>
           </div>
 
-          <span className="font-display font-normal text-[30px] text-text-primary tracking-[0.01em] leading-[1] flex items-center gap-1.5 whitespace-nowrap">
+          <span className="font-display font-normal text-[24px] sm:text-[30px] text-text-primary tracking-[0.01em] leading-[1] flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
             <span>Gửi Vũ Trụ</span>
-            <span className="text-star-glow text-base">✨</span>
+            <span className="text-star-glow text-sm sm:text-base">✨</span>
           </span>
         </Link>
 
-        {/* Navigation actions */}
-        <div className="flex items-center gap-1.5">
+        {/* Navigation actions (Bug 3 fix: icon-only on mobile, full label on sm+, whitespace-nowrap) */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <Link
+            to="/bau-troi"
+            className={cn(
+              'flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full sm:rounded-pill text-xs font-sans whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+              isSky
+                ? 'bg-lavender/20 text-lavender font-semibold'
+                : 'text-text-secondary hover:text-text-primary hover:bg-bg-soft'
+            )}
+            title="Bầu trời điều ước"
+            aria-label="Bầu trời điều ước"
+          >
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline whitespace-nowrap">Bầu trời</span>
+          </Link>
+
           <Link
             to="/toi"
             className={cn(
-              'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+              'flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full sm:rounded-pill text-xs font-sans whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
               isToi
                 ? 'bg-lavender/20 text-lavender font-semibold'
                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-soft'
             )}
             title="Góc của tôi"
+            aria-label="Góc của tôi"
           >
-            <BookOpen className="h-3.5 w-3.5" />
-            <span>Góc của tôi</span>
+            <BookOpen className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline whitespace-nowrap">Góc của tôi</span>
           </Link>
 
           <Link
@@ -211,6 +228,15 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
               </div>
 
               <Link
+                to="/bau-troi"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-text-secondary hover:bg-bg-soft hover:text-text-primary transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-lavender" />
+                <span>Bầu trời điều ước</span>
+              </Link>
+
+              <Link
                 to="/toi"
                 onClick={() => setMenuOpen(false)}
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-text-secondary hover:bg-bg-soft hover:text-text-primary transition-colors"
@@ -233,6 +259,15 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
             </>
           ) : (
             <>
+              <Link
+                to="/bau-troi"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-text-secondary hover:bg-bg-soft hover:text-text-primary transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-lavender" />
+                <span>Bầu trời điều ước</span>
+              </Link>
+
               <Link
                 to="/toi"
                 onClick={() => setMenuOpen(false)}

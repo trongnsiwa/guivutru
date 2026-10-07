@@ -125,15 +125,43 @@ export async function uploadNoteToCloud(note: Note, userId: string): Promise<Not
   const deviceId = getDeviceId();
   const row = noteToCloudRow(note, userId, deviceId);
 
-  const { data, error } = await supabase
-    .from('notes')
-    .upsert(row)
-    .select()
-    .single();
+  let data: CloudNoteRow | null = null;
+  let error: { message: string; code?: string } | null = null;
+
+  if (note.serverId) {
+    const res = await supabase
+      .from('notes')
+      .update(row)
+      .eq('id', note.serverId)
+      .select()
+      .maybeSingle();
+    data = res.data as CloudNoteRow | null;
+    error = res.error;
+  } else {
+    const res = await supabase
+      .from('notes')
+      .insert(row)
+      .select()
+      .single();
+    data = res.data as CloudNoteRow | null;
+    error = res.error;
+
+    // Fallback if ID exists in base table
+    if (error && (error as { code?: string }).code === '23505') {
+      const updateRes = await supabase
+        .from('notes')
+        .update(row)
+        .eq('id', row.id)
+        .select()
+        .maybeSingle();
+      data = updateRes.data as CloudNoteRow | null;
+      error = updateRes.error;
+    }
+  }
 
   if (error) {
     console.warn('[Sync] Failed to upload note to cloud:', error.message);
-    throw error;
+    throw new Error(error.message);
   }
 
   if (data) {
@@ -161,6 +189,40 @@ export async function deleteNoteFromCloud(noteId: string): Promise<void> {
 
   if (error) {
     console.warn('[Sync] Failed to delete note from cloud:', error.message);
+  }
+}
+
+/**
+ * Updates a note's visibility (and optional pseudonym) on Supabase cloud (§3.1, §3.3).
+ */
+export async function updateNoteVisibilityOnCloud(
+  noteId: string,
+  visibility: 'private' | 'public',
+  pseudonym?: string
+): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) return;
+
+  const nowIso = new Date().toISOString();
+  const updates: Record<string, unknown> = {
+    visibility,
+    updated_at: nowIso,
+  };
+
+  if (visibility === 'public') {
+    updates.published_at = nowIso;
+    if (pseudonym) {
+      updates.pseudonym = pseudonym;
+    }
+  }
+
+  const { error } = await supabase
+    .from('notes')
+    .update(updates)
+    .eq('id', noteId);
+
+  if (error) {
+    console.warn('[Sync] Failed to update visibility on cloud:', error.message);
+    throw error;
   }
 }
 
@@ -230,6 +292,8 @@ export async function syncNotesWithCloud(
     );
 
     let uploadedCount = 0;
+    const errors: string[] = [];
+
     if (options.uploadLocalNotes && notesToUpload.length > 0) {
       for (const note of notesToUpload) {
         try {
@@ -241,9 +305,21 @@ export async function syncNotesWithCloud(
             mergedNotes[idx] = uploaded;
           }
         } catch (uploadErr) {
-          console.warn('[Sync] Failed uploading note during batch sync:', uploadErr);
+          const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+          console.warn('[Sync] Failed uploading note during batch sync:', msg);
+          errors.push(msg);
         }
       }
+    }
+
+    if (errors.length > 0 && uploadedCount === 0) {
+      // All requested uploads failed; do not overwrite local storage notes
+      return {
+        success: false,
+        uploadedCount: 0,
+        downloadedCount: cloudNotes.length,
+        error: errors[0],
+      };
     }
 
     storage.saveNotes(mergedNotes);

@@ -1,37 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Toast } from '@/components/ui/Toast';
 import { MockNoteStack } from '@/components/wish/MockNoteStack';
 import { useNotes } from '@/hooks/useNotes';
 import { Note } from '@/types/note';
 import { cn } from '@/lib/cn';
 
 function LandingComponent() {
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [toastVisible, setToastVisible] = useState(false);
-
   // Mark hero animated on first session visit so return visits are instant
   useEffect(() => {
     if (typeof window !== 'undefined' && !sessionStorage.getItem('gvt.heroAnimated')) {
       sessionStorage.setItem('gvt.heroAnimated', 'true');
     }
   }, []);
-
-  const handleShowSkyToast = () => {
-    setToastMessage('Vũ trụ đang xếp sao, chờ xíu nha 🌙');
-    setToastVisible(true);
-  };
-
-  useEffect(() => {
-    if (toastVisible) {
-      const timer = setTimeout(() => {
-        setToastVisible(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastVisible]);
 
   const notes = useNotes((s) => s.notes);
 
@@ -118,14 +100,13 @@ function LandingComponent() {
           </Button>
         </Link>
 
-        {/* Secondary link: 20px gap from Primary CTA */}
-        <button
-          type="button"
-          onClick={handleShowSkyToast}
-          className="mt-[20px] text-text-muted hover:text-text-secondary text-[14px] font-sans font-normal transition-colors cursor-pointer bg-transparent border-none p-0 inline-flex items-center justify-center gap-1"
+        {/* Secondary link: Bầu trời điều ước activates here (§3) */}
+        <Link
+          to="/bau-troi"
+          className="mt-[20px] text-text-muted hover:text-lavender-light text-[14px] font-sans font-normal transition-colors cursor-pointer bg-transparent border-none p-0 inline-flex items-center justify-center gap-1"
         >
-          <span>Bầu trời điều ước — sắp mở 🌙</span>
-        </button>
+          <span>Bầu trời điều ước 🌙</span>
+        </Link>
       </div>
 
       {/* MockNoteStack: 64px gap from Secondary link */}
@@ -202,9 +183,6 @@ function LandingComponent() {
           </div>
         </div>
       </div>
-
-      {/* Toast Feedback */}
-      <Toast message={toastMessage} visible={toastVisible} />
     </div>
   );
 }

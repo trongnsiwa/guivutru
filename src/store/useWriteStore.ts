@@ -11,6 +11,7 @@ export interface WriteState {
   paperTheme: PaperTheme;
   stickerIds: string[];
   unlockAt: number | null;
+  visibility: 'private' | 'public';
   lastSavedNote: Note | null;
   sessionActive: boolean;
 
@@ -23,6 +24,7 @@ export interface WriteState {
   setStickerIds: (stickerIds: string[]) => void;
   toggleSticker: (sticker: string) => { added: boolean; maxReached: boolean };
   setUnlockAt: (unlockAt: number | null) => void;
+  setVisibility: (visibility: 'private' | 'public') => void;
   setLastSavedNote: (note: Note | null) => void;
   setSessionActive: (active: boolean) => void;
   reset: () => void;
@@ -36,6 +38,7 @@ const initialState = {
   paperTheme: 'dem-sao' as PaperTheme,
   stickerIds: [] as string[],
   unlockAt: null,
+  visibility: 'private' as const,
   lastSavedNote: null as Note | null,
   sessionActive: false,
 };
@@ -72,6 +75,8 @@ export const useWriteStore = create<WriteState>()(
       },
 
       setUnlockAt: (unlockAt: number | null) => set({ unlockAt }),
+
+      setVisibility: (visibility: 'private' | 'public') => set({ visibility }),
 
       setLastSavedNote: (lastSavedNote: Note | null) => set({ lastSavedNote }),
 

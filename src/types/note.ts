@@ -17,7 +17,10 @@ export interface Note {
   deviceId?: string | null;
   serverId?: string | null;
   updatedAt?: number;
+  publishedAt?: number;
   visibility?: 'private' | 'public';
+  pseudonym?: string;
+  seed?: boolean;
   isDeleted?: boolean;
   isLocalOnly?: boolean;
 }
@@ -33,6 +36,9 @@ export interface CloudNoteRow {
   unlock_at: string;
   status: 'sealed' | 'opened';
   visibility: 'private' | 'public';
+  pseudonym?: string | null;
+  seed?: boolean;
+  published_at?: string | null;
   created_at: string;
   opened_at: string | null;
   updated_at: string;
@@ -54,7 +60,10 @@ export function cloudRowToNote(row: CloudNoteRow): Note {
     createdAt: new Date(row.created_at).getTime(),
     openedAt: row.opened_at ? new Date(row.opened_at).getTime() : null,
     updatedAt: new Date(row.updated_at).getTime(),
+    publishedAt: row.published_at ? new Date(row.published_at).getTime() : undefined,
     visibility: row.visibility,
+    pseudonym: row.pseudonym ?? undefined,
+    seed: row.seed,
     isDeleted: row.is_deleted,
     isLocalOnly: false,
   };
@@ -72,6 +81,9 @@ export function noteToCloudRow(note: Note, userId: string, deviceId?: string | n
     unlock_at: new Date(note.unlockAt).toISOString(),
     status: note.status,
     visibility: note.visibility || 'private',
+    pseudonym: note.pseudonym || null,
+    seed: note.seed || false,
+    published_at: note.publishedAt ? new Date(note.publishedAt).toISOString() : undefined,
     created_at: note.createdAt ? new Date(note.createdAt).toISOString() : undefined,
     opened_at: note.openedAt ? new Date(note.openedAt).toISOString() : null,
     updated_at: note.updatedAt ? new Date(note.updatedAt).toISOString() : undefined,

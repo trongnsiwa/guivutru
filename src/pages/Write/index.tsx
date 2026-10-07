@@ -19,6 +19,10 @@ import { Toast } from '@/components/ui/Toast';
 import { Step1Prompt } from './Step1Prompt';
 import { Step2Content } from './Step2Content';
 import { Step3Unlock } from './Step3Unlock';
+import { useAuth } from '@/hooks/useAuth';
+import { containsBadWords, BAD_WORD_REJECTION } from '@/lib/moderation';
+import { checkPublicRateLimit, RATE_LIMIT_REJECTION } from '@/lib/sky';
+import { getOrCreateUserPseudonym } from '@/lib/pseudonym';
 
 export function Write() {
   const navigate = useNavigate();
@@ -33,6 +37,7 @@ export function Write() {
     paperTheme,
     stickerIds,
     unlockAt,
+    visibility,
     sessionActive,
     setStep,
     setContent,
@@ -41,6 +46,7 @@ export function Write() {
     setPaperTheme,
     setStickerIds,
     setUnlockAt,
+    setVisibility,
     setSessionActive,
     reset,
   } = useWriteStore(
@@ -52,6 +58,7 @@ export function Write() {
       paperTheme: s.paperTheme,
       stickerIds: s.stickerIds,
       unlockAt: s.unlockAt,
+      visibility: s.visibility,
       sessionActive: s.sessionActive,
       setStep: s.setStep,
       setContent: s.setContent,
@@ -60,6 +67,7 @@ export function Write() {
       setPaperTheme: s.setPaperTheme,
       setStickerIds: s.setStickerIds,
       setUnlockAt: s.setUnlockAt,
+      setVisibility: s.setVisibility,
       setSessionActive: s.setSessionActive,
       reset: s.reset,
     }))
@@ -151,7 +159,7 @@ export function Write() {
   };
 
   // Step 3: Seal note
-  const handleSealNote = () => {
+  const handleSealNote = async () => {
     // Haptic feedback (A5)
     try {
       navigator.vibrate?.(10);
@@ -174,6 +182,34 @@ export function Write() {
       return;
     }
 
+    // Public note checks (§3.1, §3.4, §3.5, §3.7)
+    let assignedPseudonym: string | undefined;
+    if (visibility === 'public') {
+      // Layer 1: Pre-filter bad words (§3.4)
+      if (containsBadWords(content)) {
+        showToast(BAD_WORD_REJECTION);
+        return;
+      }
+
+      // Acceptance: Publishing requires login (§3.7)
+      const currentUser = useAuth.getState().user;
+      if (!currentUser) {
+        showToast('Đăng nhập để chia sẻ lên bầu trời nha 🌙');
+        useAuth.getState().openLoginModal();
+        return;
+      }
+
+      // Layer 3.5: Rate limiting check (1/day, 5/week)
+      const rateCheck = await checkPublicRateLimit(currentUser.id);
+      if (!rateCheck.allowed) {
+        showToast(rateCheck.message || RATE_LIMIT_REJECTION);
+        return;
+      }
+
+      // Stable pseudonym per user (§3.3)
+      assignedPseudonym = await getOrCreateUserPseudonym(currentUser.id);
+    }
+
     // Create note object
     const newNote: Note = {
       id: nanoid(12),
@@ -185,11 +221,13 @@ export function Write() {
       status: 'sealed',
       createdAt: Date.now(),
       openedAt: null,
+      visibility,
+      pseudonym: assignedPseudonym,
     };
 
     // Save to localStorage and sync if authenticated
     try {
-      useNotes.getState().addNote(newNote);
+      await useNotes.getState().addNote(newNote);
     } catch {
       showToast('Không lưu được rồi, thử lại nha 🥲');
       return;
@@ -327,6 +365,8 @@ export function Write() {
               <Step3Unlock
                 unlockAt={unlockAt || addMonths(new Date(), 1).getTime()}
                 onUnlockAtChange={setUnlockAt}
+                visibility={visibility}
+                onVisibilityChange={setVisibility}
               />
             )}
           </motion.div>

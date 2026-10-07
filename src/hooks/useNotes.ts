@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Note } from '@/types/note';
 import { storage } from '@/lib/storage';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { uploadNoteToCloud, deleteNoteFromCloud, openNoteOnCloud } from '@/lib/sync';
+import { uploadNoteToCloud, deleteNoteFromCloud, openNoteOnCloud, updateNoteVisibilityOnCloud } from '@/lib/sync';
 import { useAuth } from './useAuth';
 
 interface NotesState {
@@ -11,6 +11,7 @@ interface NotesState {
   addNote: (note: Note) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   openNote: (id: string) => Promise<void>;
+  updateNoteVisibility: (id: string, visibility: 'private' | 'public', pseudonym?: string) => Promise<void>;
 }
 
 export const useNotes = create<NotesState>((set) => ({
@@ -76,6 +77,50 @@ export const useNotes = create<NotesState>((set) => ({
         }
       } catch (err) {
         console.warn('[useNotes] Cloud open failed:', err);
+      }
+    }
+  },
+
+  updateNoteVisibility: async (id: string, visibility: 'private' | 'public', pseudonym?: string) => {
+    const existing = storage.getNoteById(id);
+    const now = Date.now();
+    const updates: Partial<Note> = {
+      visibility,
+      ...(visibility === 'public' ? { pseudonym, publishedAt: now } : {}),
+    };
+
+    // 1. Update locally
+    storage.updateNote(id, updates);
+    set({ notes: storage.getNotes() });
+
+    // 2. Sync to cloud if user is authenticated
+    const user = useAuth.getState().user;
+    if (user && isSupabaseConfigured) {
+      const currentNote = storage.getNoteById(id);
+      if (!currentNote) return;
+
+      const targetId = currentNote.serverId || currentNote.id;
+      if (existing?.serverId) {
+        try {
+          await updateNoteVisibilityOnCloud(targetId, visibility, pseudonym);
+        } catch (err) {
+          console.warn('[useNotes] Cloud visibility update failed:', err);
+          throw err;
+        }
+      } else {
+        // Note was local-only; upload full record with new visibility
+        try {
+          const uploaded = await uploadNoteToCloud(currentNote, user.id);
+          storage.updateNote(id, {
+            serverId: uploaded.serverId || uploaded.id,
+            userId: user.id,
+            updatedAt: uploaded.updatedAt || Date.now(),
+          });
+          set({ notes: storage.getNotes() });
+        } catch (err) {
+          console.warn('[useNotes] Cloud note upload failed:', err);
+          throw err;
+        }
       }
     }
   },

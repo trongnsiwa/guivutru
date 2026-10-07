@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { getLocalOnlyNotes, purgeCloudNotesFromLocal, syncNotesWithCloud } from '@/lib/sync';
+import { getLocalOnlyNotes, purgeCloudNotesFromLocal, syncNotesWithCloud, SyncResult } from '@/lib/sync';
 import { useNotes } from './useNotes';
 
 interface AuthState {
@@ -16,7 +16,7 @@ interface AuthState {
   openLoginModal: () => void;
   closeLoginModal: () => void;
   dismissSyncPrompt: () => void;
-  confirmSyncLocalNotes: (upload: boolean) => Promise<void>;
+  confirmSyncLocalNotes: (upload: boolean) => Promise<SyncResult>;
   signInWithMagicLink: (email: string) => Promise<{ success: boolean; message: string }>;
   signOut: () => Promise<void>;
   initAuth: () => void;
@@ -51,13 +51,21 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
 
-  confirmSyncLocalNotes: async (upload: boolean) => {
+  confirmSyncLocalNotes: async (upload: boolean): Promise<SyncResult> => {
     const { user } = get();
-    set({ showSyncPrompt: false });
-    if (user) {
-      await syncNotesWithCloud(user.id, { uploadLocalNotes: upload });
+    if (!user) {
+      set({ showSyncPrompt: false });
+      return { success: false, uploadedCount: 0, downloadedCount: 0, error: 'Chưa đăng nhập' };
+    }
+
+    const result = await syncNotesWithCloud(user.id, { uploadLocalNotes: upload });
+    if (result.success) {
+      set({ showSyncPrompt: false });
       useNotes.getState().loadNotes();
     }
+    // If not successful, do not close showSyncPrompt so the user sees the modal and error toast
+
+    return result;
   },
 
   signInWithMagicLink: async (email: string) => {
