@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad512" cx="35%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#241b47" />
+      <stop offset="100%" stop-color="#080511" />
+    </radialGradient>
+    <filter id="glow512" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad512)" stroke="#c9b6ff" stroke-width="6" stroke-opacity="0.3" />
+
+  <!-- Crescent moon -->
+  <path d="M 230 130 A 110 110 0 1 0 365 345 A 125 125 0 0 1 230 130 Z" fill="#9D84B7" />
+
+  <!-- Sparkle stars -->
+  <path d="M 375 130 Q 375 160 405 160 Q 375 160 375 190 Q 375 160 345 160 Q 375 160 375 130 Z" fill="#FFE9A8" filter="url(#glow512)" />
+  <path d="M 160 365 Q 160 380 175 380 Q 160 380 160 395 Q 160 380 145 380 Q 160 380 160 365 Z" fill="#FFE9A8" />
+</svg>

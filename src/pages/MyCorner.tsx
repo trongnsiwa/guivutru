@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Plus, Sparkles, List, Compass } from 'lucide-react';
 import { useNotes } from '@/hooks/useNotes';
 import { usePrefs } from '@/hooks/usePrefs';
@@ -7,8 +7,12 @@ import { NoteCard } from '@/components/wish/NoteCard';
 import { ConstellationView } from '@/components/wish/ConstellationView';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { Toast } from '@/components/ui/Toast';
 import { Note } from '@/types/note';
 import { cn } from '@/lib/cn';
+import { computeYearInReview } from '@/lib/yearInReview';
+import { YearInReviewModal } from '@/components/wish/YearInReviewModal';
+import { updateEmailReminderPreference } from '@/lib/reminders';
 
 export function MyCorner() {
   const notes = useNotes((s) => s.notes);
@@ -17,6 +21,21 @@ export function MyCorner() {
 
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [showYearInReview, setShowYearInReview] = useState(false);
+
+  const yearStats = useMemo(() => computeYearInReview(notes), [notes]);
+
+  useEffect(() => {
+    if (searchParams.get('unsubscribe') === 'email') {
+      updateEmailReminderPreference(false);
+      setToastMsg('Đã tắt email nhắc nhở cho tài khoản của bạn 🌙');
+      searchParams.delete('unsubscribe');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Focus the cancel action by default when modal opens
   useEffect(() => {
@@ -70,40 +89,54 @@ export function MyCorner() {
         </Link>
       </div>
 
-      {/* View Switcher Chips (B1) */}
+      {/* View Switcher Chips (B1) & Year in Review (§4.5) */}
       {notes.length > 0 && (
-        <div className="flex items-center justify-between gap-3 pt-0.5 pb-1">
-          <span className="font-sans text-xs text-text-muted">Chế độ xem:</span>
-          <div className="inline-flex items-center rounded-full p-0.5 bg-bg-soft/70 border border-border-soft">
-            <button
-              type="button"
-              onClick={() => updatePrefs({ toiView: 'list' })}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
-                prefs.toiView === 'list'
-                  ? 'bg-lavender text-bg-deep font-semibold shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              )}
-              aria-pressed={prefs.toiView === 'list'}
-            >
-              <List className="h-3.5 w-3.5" />
-              <span>Danh sách</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => updatePrefs({ toiView: 'sky' })}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
-                prefs.toiView === 'sky'
-                  ? 'bg-lavender text-bg-deep font-semibold shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              )}
-              aria-pressed={prefs.toiView === 'sky'}
-            >
-              <Compass className="h-3.5 w-3.5" />
-              <span>Bầu trời ✨</span>
-            </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5 pb-1">
+          <div className="flex items-center gap-2">
+            <span className="font-sans text-xs text-text-muted">Chế độ xem:</span>
+            <div className="inline-flex items-center rounded-full p-0.5 bg-bg-soft/70 border border-border-soft">
+              <button
+                type="button"
+                onClick={() => updatePrefs({ toiView: 'list' })}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+                  prefs.toiView === 'list'
+                    ? 'bg-lavender text-bg-deep font-semibold shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary'
+                )}
+                aria-pressed={prefs.toiView === 'list'}
+              >
+                <List className="h-3.5 w-3.5" />
+                <span>Danh sách</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updatePrefs({ toiView: 'sky' })}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender',
+                  prefs.toiView === 'sky'
+                    ? 'bg-lavender text-bg-deep font-semibold shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary'
+                )}
+                aria-pressed={prefs.toiView === 'sky'}
+              >
+                <Compass className="h-3.5 w-3.5" />
+                <span>Bầu trời ✨</span>
+              </button>
+            </div>
           </div>
+
+          {yearStats.isEligible && (
+            <button
+              type="button"
+              data-testid="year-in-review-btn"
+              onClick={() => setShowYearInReview(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-sans bg-star-glow/10 border border-star-glow/30 text-star-glow hover:bg-star-glow/20 transition-all cursor-pointer shadow-sm"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Nhìn lại năm qua ✨</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -183,6 +216,16 @@ export function MyCorner() {
           </div>
         </div>
       </Modal>
+
+      {/* Year in Review Modal (§4.5) */}
+      <YearInReviewModal
+        isOpen={showYearInReview}
+        onClose={() => setShowYearInReview(false)}
+        stats={yearStats}
+      />
+
+      {/* Unsubscribe Toast Notification */}
+      <Toast message={toastMsg || ''} visible={!!toastMsg} onClose={() => setToastMsg(null)} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Flag, Sparkles, Lock } from 'lucide-react';
 import { SkyNote, getLocalReportedNoteIds } from '@/lib/sky';
 import { useNotes } from '@/hooks/useNotes';
+import { NoteReactions } from '@/components/wish/NoteReactions';
 import { PAPER_THEMES } from '@/lib/constants';
 import { format } from 'date-fns';
 
@@ -124,6 +125,9 @@ export function SkyNoteModal({ note, isOpen, onClose, onReport }: SkyNoteModalPr
                 </div>
               )}
             </div>
+
+            {/* Reactions on Public Notes (§4.4) */}
+            <NoteReactions noteId={note.id} isOwnNote={isOwnNote} />
 
             {/* Footer with small report link (§3.4 Layer 2) */}
             <div className="flex items-center justify-between pt-3 border-t border-white/10 text-xs">

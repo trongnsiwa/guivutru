@@ -8,6 +8,7 @@ import { NoiseOverlay } from '@/components/fx/NoiseOverlay';
 import { CursorSparkles } from '@/components/fx/CursorSparkles';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { SyncPromptModal } from '@/components/auth/SyncPromptModal';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { useAuth } from '@/hooks/useAuth';
 
 export function PageShell() {
@@ -59,6 +60,7 @@ export function PageShell() {
       {/* Modals for Auth & Local-first Sync */}
       <LoginModal />
       <SyncPromptModal />
+      <InstallPrompt />
 
       {/* Screen reader route change announcement */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">

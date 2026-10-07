@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { BookOpen, Info, User, LogIn, LogOut, Sparkles } from 'lucide-react';
+import { BookOpen, Info, User, LogIn, LogOut, Sparkles, Bell } from 'lucide-react';
 import { MeteorShower } from '@/components/fx/MeteorShower';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/hooks/useAuth';
+import { getLocalEmailRemindersEnabled, updateEmailReminderPreference } from '@/lib/reminders';
 
 export interface TopBarProps {
   activePath?: string;
@@ -26,6 +27,14 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tapTimestampsRef = useRef<number[]>([]);
   const [showMeteorShower, setShowMeteorShower] = useState(false);
+  const [emailReminders, setEmailReminders] = useState(() => getLocalEmailRemindersEnabled());
+
+  const handleToggleReminders = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !emailReminders;
+    setEmailReminders(next);
+    await updateEmailReminderPreference(next, user?.id);
+  };
 
   // Update trigger position for portal alignment
   const updateTriggerPosition = useCallback(() => {
@@ -244,6 +253,31 @@ export const TopBar = React.memo(function TopBar({ activePath = '/' }: TopBarPro
                 <BookOpen className="h-3.5 w-3.5 text-lavender" />
                 <span>Góc của tôi</span>
               </Link>
+
+              <div className="my-1 border-t border-border-soft/40 px-3 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-text-secondary">
+                  <Bell className="h-3.5 w-3.5 text-lavender" />
+                  <span className="text-[11px]">Email nhắc mở</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={emailReminders}
+                  aria-label="Bật hoặc tắt email nhắc nhở"
+                  onClick={handleToggleReminders}
+                  className={cn(
+                    'w-7 h-4 rounded-full transition-colors relative cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lavender shrink-0',
+                    emailReminders ? 'bg-lavender' : 'bg-bg-soft border border-border-soft'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 left-0.5 w-3 h-3 rounded-full transition-transform',
+                      emailReminders ? 'translate-x-3 bg-bg-deep' : 'translate-x-0 bg-text-muted'
+                    )}
+                  />
+                </button>
+              </div>
 
               <button
                 type="button"
