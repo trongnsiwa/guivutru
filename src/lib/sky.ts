@@ -420,8 +420,29 @@ export async function fetchMySkyNotes(_userId?: string): Promise<SkyNote[]> {
  * Report a public note (§3.4 Layer 2).
  * Hides note locally immediately and notifies backend RPC.
  */
-export async function reportSkyNote(noteId: string, reason: string = 'Inappropriate content'): Promise<boolean> {
-  // 1. Hide locally immediately (disappears in 0ms)
+export async function reportSkyNote(
+  noteId: string,
+  reason: string = 'Inappropriate content'
+): Promise<{ success: boolean; message?: string }> {
+  // Check if own note in local storage
+  try {
+    const raw = localStorage.getItem('gvt.notes');
+    if (raw) {
+      const notes = JSON.parse(raw) as Note[];
+      if (notes.some((n) => n.id === noteId)) {
+        return { success: false, message: 'Bạn không thể báo cáo điều ước của chính mình' };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // Check if user already reported this note
+  if (getLocalReportedNoteIds().has(noteId)) {
+    return { success: false, message: 'Bạn đã báo cáo điều ước này rồi' };
+  }
+
+  // 1. Mark reported locally immediately (disappears in 0ms)
   markNoteAsReportedLocally(noteId);
 
   // 2. Call backend RPC if available
@@ -433,13 +454,19 @@ export async function reportSkyNote(noteId: string, reason: string = 'Inappropri
       });
       if (error) {
         console.warn('[Sky] Report RPC error:', error);
+        if (error.message?.includes('own note')) {
+          return { success: false, message: 'Bạn không thể báo cáo điều ước của chính mình' };
+        }
+        if (error.message?.includes('Already reported')) {
+          return { success: false, message: 'Bạn đã báo cáo điều ước này rồi' };
+        }
       }
     } catch (err) {
       console.warn('[Sky] Report RPC failed:', err);
     }
   }
 
-  return true;
+  return { success: true };
 }
 
 /**

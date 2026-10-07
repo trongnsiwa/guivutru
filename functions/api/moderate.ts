@@ -1,9 +1,7 @@
-import badWordsList from '../../functions/bad-words.json' with { type: 'json' };
+import badWordsList from '../bad-words.json' with { type: 'json' };
 
-export const BAD_WORD_REJECTION = 'Viết lại nhẹ nhàng hơn nha, vũ trụ nghe hết á 🌙';
-export const RATE_LIMIT_REJECTION = 'Bạn đã gửi hôm nay rồi, mai quay lại nha 🌙';
+const BAD_WORD_REJECTION = 'Viết lại nhẹ nhàng hơn nha, vũ trụ nghe hết á 🌙';
 
-// Normalized set of forbidden terms
 const badWordsSet = new Set<string>(
   badWordsList.map((w: string) => w.trim().toLowerCase()).filter(Boolean)
 );
@@ -12,7 +10,6 @@ const badWordsSet = new Set<string>(
 // e.g. "đi dạo" (di), "đại học" / "dài" (dai), "du lịch" (du), "do đó" (do)
 const DIACRITIC_COLLISION_WORDS = new Set(['di', 'dai', 'du', 'do']);
 
-// Diacritic-stripped forbidden terms (excluding ambiguous collisions on single words)
 const strippedBadWordsSet = new Set<string>(
   badWordsList
     .map((w: string) => stripDiacritics(w.trim().toLowerCase()))
@@ -36,10 +33,6 @@ function normalizeLeet(str: string): string {
     .replace(/[3]/g, 'e');
 }
 
-/**
- * Collapses runs of single-character tokens (e.g. "f u c k" -> "fuck", "đ m" -> "đm").
- * Leaves normal multi-character words untouched (e.g. "đám mây" remains "đám mây").
- */
 function collapseSpaced(str: string): string {
   const words = str.split(/\s+/);
   const result: string[] = [];
@@ -59,15 +52,10 @@ function collapseSpaced(str: string): string {
   return result.join(' ');
 }
 
-/**
- * Pre-filter check for Vietnamese + English bad words per §3.4.
- * Returns true if text contains prohibited terms or evasion patterns.
- */
-export function containsBadWords(text: string): boolean {
+export function containsBadWordsServer(text: string): boolean {
   if (!text) return false;
 
   const lower = text.toLowerCase();
-  // Strip intra-word punctuation/symbols (e.g. "d.m" -> "dm", "v_l" -> "vl", "f*ck" -> "fck")
   const deobfuscated = lower.replace(/([a-zA-Z0-9à-ỹÀ-Ỹ])[._\-*]+(?=[a-zA-Z0-9à-ỹÀ-Ỹ])/g, '$1');
 
   for (const candidate of [lower, deobfuscated]) {
@@ -82,17 +70,14 @@ export function containsBadWords(text: string): boolean {
     for (const target of [cleanPunct, collapsed]) {
       const words = target.split(/\s+/).filter(Boolean);
 
-      // 1. Direct word check
       for (const word of words) {
         if (badWordsSet.has(word)) return true;
       }
 
-      // 2. Multi-word phrase check (e.g. "du má", "địt mẹ", "chó đẻ")
       for (const phrase of badWordsSet) {
         if (phrase.includes(' ') && target.includes(phrase)) return true;
       }
 
-      // 3. Diacritic-stripped check
       const stripped = stripDiacritics(target);
       const strippedWords = stripped.split(/\s+/).filter(Boolean);
       for (const word of strippedWords) {
@@ -107,35 +92,32 @@ export function containsBadWords(text: string): boolean {
   return false;
 }
 
-/**
- * Validates content moderation against server-side endpoint (/api/moderate)
- * with client-side courtesy pre-check. Returns structured result per §3.4.
- */
-export async function validateContentModeration(
-  text: string
-): Promise<{ allowed: boolean; message?: string }> {
-  // 1. Client-side courtesy pre-check
-  if (containsBadWords(text)) {
-    return { allowed: false, message: BAD_WORD_REJECTION };
-  }
+export const onRequestPost = async ({ request }: { request: Request }): Promise<Response> => {
+  try {
+    const body = (await request.json().catch(() => ({}))) as { content?: string };
+    const content = body.content || '';
 
-  // 2. Server-side pre-filter call via /api/moderate
-  if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch('/api/moderate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        return { allowed: false, message: data?.error || BAD_WORD_REJECTION };
-      }
-    } catch {
-      // Offline fallback: client pre-check already passed
+    if (containsBadWordsServer(content)) {
+      return new Response(
+        JSON.stringify({
+          allowed: false,
+          error: BAD_WORD_REJECTION,
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
+
+    return new Response(JSON.stringify({ allowed: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
-
-  return { allowed: true };
-}
-
+};

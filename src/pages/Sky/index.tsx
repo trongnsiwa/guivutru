@@ -35,7 +35,12 @@ export function Sky() {
 
   // Instant local hide on report (§3.4 Layer 2: "One report hides the note pending review")
   const handleReportNote = async (noteId: string) => {
-    await reportSkyNote(noteId);
+    const res = await reportSkyNote(noteId);
+    if (!res.success) {
+      setToastMessage(res.message || 'Không thể báo cáo điều ước này');
+      setToastVisible(true);
+      return;
+    }
     // Disappear in 0ms locally
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
     setToastMessage('Đã báo cáo điều ước này. Cảm ơn bạn đã giữ gìn bầu trời 🌙');

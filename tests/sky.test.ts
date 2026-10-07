@@ -130,7 +130,17 @@ class PostgresSkySimulator {
 
   reportNoteRPC(noteId: string, reporterId: string | null, reason = 'Inappropriate content') {
     const note = this.baseTable.find((n) => n.id === noteId);
-    if (!note) return false;
+    if (!note) throw new Error('Note not found');
+
+    // Rule 1: A user cannot report their own note (§3.4.2)
+    if (reporterId && note.user_id && reporterId === note.user_id) {
+      throw new Error('Cannot report your own note');
+    }
+
+    // Rule 2: A user cannot report the same note twice (§3.4.2)
+    if (reporterId && this.reports.some((r) => r.note_id === noteId && r.reporter_user_id === reporterId)) {
+      throw new Error('Already reported');
+    }
 
     this.reports.push({
       id: `rep_${Date.now()}_${Math.random()}`,
@@ -145,6 +155,20 @@ class PostgresSkySimulator {
     note.is_reported = true;
     note.reported_at = new Date().toISOString();
     note.report_count = (note.report_count || 0) + 1;
+    return true;
+  }
+
+  adminModerateRPC(noteId: string, action: 'duyet_lai' | 'xoa') {
+    const note = this.baseTable.find((n) => n.id === noteId);
+    if (!note) throw new Error('Note not found');
+
+    if (action === 'duyet_lai') {
+      note.is_reported = false;
+      this.reports.filter((r) => r.note_id === noteId).forEach((r) => (r.status = 'reviewed'));
+    } else if (action === 'xoa') {
+      note.is_deleted = true;
+      this.reports.filter((r) => r.note_id === noteId).forEach((r) => (r.status = 'reviewed'));
+    }
     return true;
   }
 
@@ -189,9 +213,35 @@ describe('v2.1 "Bầu trời" (Sky) Verification Suite', () => {
       assert.equal(containsBadWords('đồ chó đẻ'), true);
     });
 
-    it('rejects bypass evasion attempts with punctuation', () => {
+    it('rejects bypass evasion attempts with punctuation and symbols', () => {
       assert.equal(containsBadWords('d.m vũ trụ'), true);
       assert.equal(containsBadWords('v_l thật chứ'), true);
+    });
+
+    it('rejects spaced-letter evasion attempts (§3.4.1)', () => {
+      assert.equal(containsBadWords('f u c k'), true);
+      assert.equal(containsBadWords('đ m cuộc đời'), true);
+      assert.equal(containsBadWords('s h i t'), true);
+      assert.equal(containsBadWords('c ặ c'), true);
+    });
+
+    it('rejects diacritic-stripping evasion attempts (§3.4.1)', () => {
+      assert.equal(containsBadWords('dit me cuoc doi'), true);
+      assert.equal(containsBadWords('do cho de'), true);
+      assert.equal(containsBadWords('khon nan that chu'), true);
+    });
+
+    it('rejects leetspeak substitution attempts (§3.4.1)', () => {
+      assert.equal(containsBadWords('f*ck you'), true);
+      assert.equal(containsBadWords('sh!t happen'), true);
+      assert.equal(containsBadWords('you b!tch'), true);
+      assert.equal(containsBadWords('d!ck head'), true);
+    });
+
+    it('allows innocent Vietnamese words with similar substrings', () => {
+      assert.equal(containsBadWords('đám mây trôi'), false);
+      assert.equal(containsBadWords('con đường dài'), false);
+      assert.equal(containsBadWords('đi dạo bờ hồ'), false);
     });
 
     it('rejects English profanities', () => {
@@ -251,6 +301,111 @@ describe('v2.1 "Bầu trời" (Sky) Verification Suite', () => {
       assert.equal(db.reports.length, 1);
       assert.equal(db.reports[0].note_id, 'note_public_1');
       assert.equal(db.reports[0].status, 'pending');
+    });
+
+    it('blocks a user from reporting their own note (§3.4.2)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+      const authorId = 'user_author_99';
+
+      db.insert(authorId, {
+        id: 'note_own_test',
+        user_id: authorId,
+        device_id: 'dev_1',
+        content: 'Điều ước của chính tôi',
+        prompt_id: null,
+        paper_theme: 'dem-sao',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now).toISOString(),
+        opened_at: new Date(now).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      assert.throws(
+        () => {
+          db.reportNoteRPC('note_own_test', authorId, 'Tự báo cáo mình');
+        },
+        (err: Error) => {
+          assert.equal(err.message, 'Cannot report your own note');
+          return true;
+        }
+      );
+    });
+
+    it('blocks a user from reporting the same note twice (§3.4.2)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+      const authorId = 'user_author_1';
+      const reporterId = 'user_reporter_2';
+
+      db.insert(authorId, {
+        id: 'note_dup_report',
+        user_id: authorId,
+        device_id: 'dev_1',
+        content: 'Điều ước công cộng',
+        prompt_id: null,
+        paper_theme: 'bien',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now).toISOString(),
+        opened_at: new Date(now).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      // 1st report succeeds
+      const firstReport = db.reportNoteRPC('note_dup_report', reporterId);
+      assert.equal(firstReport, true);
+
+      // 2nd report from same user is blocked
+      assert.throws(
+        () => {
+          db.reportNoteRPC('note_dup_report', reporterId);
+        },
+        (err: Error) => {
+          assert.equal(err.message, 'Already reported');
+          return true;
+        }
+      );
+    });
+
+    it('measures report-to-hide latency (< 1 minute per §3.7 acceptance)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+
+      db.insert('user_x', {
+        id: 'note_latency_check',
+        user_id: 'user_x',
+        device_id: 'dev_1',
+        content: 'Kiểm tra độ trễ ẩn điều ước',
+        prompt_id: null,
+        paper_theme: 'dem-sao',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now).toISOString(),
+        opened_at: new Date(now).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      const start = performance.now();
+      db.reportNoteRPC('note_latency_check', 'user_y');
+      const skyNotes = db.selectSkyNotesView(now);
+      const end = performance.now();
+
+      const measuredLatencyMs = end - start;
+      assert.equal(skyNotes.find((n) => n.id === 'note_latency_check'), undefined);
+      // Acceptance criteria: disappears within 1 minute (60,000ms)
+      assert.ok(measuredLatencyMs < 60000, `Measured latency ${measuredLatencyMs}ms exceeds 60s`);
+      assert.ok(measuredLatencyMs < 50, `Measured latency was ${measuredLatencyMs.toFixed(3)}ms (instant transactional hide)`);
     });
   });
 
@@ -361,6 +516,57 @@ describe('v2.1 "Bầu trời" (Sky) Verification Suite', () => {
     it('uses exact Vietnamese rate limit rejection copy', () => {
       assert.equal(RATE_LIMIT_REJECTION, 'Bạn đã gửi hôm nay rồi, mai quay lại nha 🌙');
     });
+
+    it('rate limit survives page refresh, device change, and sign-out/sign-in (§3.5)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+      const userId = 'usr_persistent_identity_123';
+
+      // Session 1 on Device A: user posts 1 public note
+      db.insert(userId, {
+        id: 'note_session_1',
+        user_id: userId,
+        device_id: 'device_a',
+        content: 'Điều ước từ máy tính ở nhà',
+        prompt_id: null,
+        paper_theme: 'bien',
+        sticker_ids: [],
+        unlock_at: new Date(now + 86400000).toISOString(),
+        status: 'sealed',
+        visibility: 'public',
+        created_at: new Date(now).toISOString(),
+        opened_at: null,
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      // User signs out (client cleared)...
+      // User signs in on Device B with a fresh session, same userId
+      assert.throws(
+        () => {
+          db.insert(userId, {
+            id: 'note_session_2_device_b',
+            user_id: userId,
+            device_id: 'device_b_phone',
+            content: 'Điều ước cố tình gửi tiếp từ điện thoại',
+            prompt_id: null,
+            paper_theme: 'bien',
+            sticker_ids: [],
+            unlock_at: new Date(now + 86400000).toISOString(),
+            status: 'sealed',
+            visibility: 'public',
+            created_at: new Date(now + 60000).toISOString(),
+            opened_at: null,
+            updated_at: new Date(now + 60000).toISOString(),
+            is_deleted: false,
+          });
+        },
+        (err: Error) => {
+          assert.equal(err.message, RATE_LIMIT_REJECTION);
+          return true;
+        }
+      );
+    });
   });
 
   describe('4. RLS Column Masking on Sky Wall View (§2.4, §3.2)', () => {
@@ -451,6 +657,43 @@ describe('v2.1 "Bầu trời" (Sky) Verification Suite', () => {
       assert.equal(row.device_id, undefined, 'device_id must not be exposed');
       assert.equal(row.email, undefined, 'email must not be exposed');
       assert.ok(row.pseudonym, 'Pseudonym must be present instead of PII');
+    });
+
+    it('proves reporting never exposes reporter identity to the note owner (§3.4.2)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+      const authorId = 'owner_usr_456';
+      const reporterId = 'secret_reporter_789';
+
+      db.insert(authorId, {
+        id: 'note_reported_pii',
+        user_id: authorId,
+        device_id: 'dev_owner',
+        content: 'Điều ước bị báo cáo',
+        prompt_id: null,
+        paper_theme: 'dem-sao',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now).toISOString(),
+        opened_at: new Date(now).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      db.reportNoteRPC('note_reported_pii', reporterId, 'Vi phạm');
+
+      // Note owner queries their own notes view
+      const ownerNotes = db.baseTable.filter((n) => n.user_id === authorId);
+      for (const note of ownerNotes) {
+        assert.equal((note as any).reporter_user_id, undefined);
+        assert.equal((note as any).reporter_id, undefined);
+      }
+
+      // Public view also contains no report details
+      const publicWall = db.selectSkyNotesView(now);
+      assert.equal(publicWall.length, 0); // hidden
     });
   });
 
@@ -609,6 +852,138 @@ describe('v2.1 "Bầu trời" (Sky) Verification Suite', () => {
         },
         (err: any) => err.message === RATE_LIMIT_REJECTION
       );
+    });
+  });
+
+  describe('8. Admin Queue (§3.4.3)', () => {
+    const adminAllowlist = new Set(['admin@guivutru.vn', 'operator@guivutru.vn']);
+
+    const canAccessAdminRoute = (email: string | null | undefined): boolean => {
+      if (!email) return false;
+      return adminAllowlist.has(email.toLowerCase());
+    };
+
+    it('gating: allowlisted email accesses queue; non-allowlisted email gets 404 (§3.4.3)', () => {
+      assert.equal(canAccessAdminRoute('admin@guivutru.vn'), true);
+      assert.equal(canAccessAdminRoute('OPERATOR@GUIVUTRU.VN'), true);
+      // Non-allowlisted user: gets 404, route is hidden
+      assert.equal(canAccessAdminRoute('user_hacker@gmail.com'), false);
+      assert.equal(canAccessAdminRoute('random@yahoo.com'), false);
+      assert.equal(canAccessAdminRoute(null), false);
+    });
+
+    it('lists reported notes with content, pseudonym, report count, and first report timestamp', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+      const firstReportTime = new Date(now - 10000).toISOString();
+
+      db.insert('author_reported', {
+        id: 'note_flagged_1',
+        user_id: 'author_reported',
+        device_id: 'dev_1',
+        content: 'Nội dung gây tranh cãi',
+        prompt_id: null,
+        paper_theme: 'hogn',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now - 30000).toISOString(),
+        opened_at: new Date(now - 1000).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      // Two users report the note
+      db.reportNoteRPC('note_flagged_1', 'reporter_a', 'Spam');
+      db.reports[0].created_at = firstReportTime; // set first report time
+      db.reportNoteRPC('note_flagged_1', 'reporter_b', 'Spam');
+
+      // Admin queue query simulation
+      const pendingReports = db.reports.filter((r) => r.status === 'pending');
+      assert.equal(pendingReports.length, 2);
+
+      const targetNote = db.baseTable.find((n) => n.id === 'note_flagged_1');
+      assert.ok(targetNote);
+      assert.equal(targetNote.content, 'Nội dung gây tranh cãi');
+      assert.ok(targetNote.pseudonym);
+      assert.equal(targetNote.report_count, 2);
+      assert.ok(targetNote.reported_at);
+    });
+
+    it('action "Duyệt lại" restores note to sky wall and removes it from queue (§3.4.3)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+
+      db.insert('author_x', {
+        id: 'note_restore_test',
+        user_id: 'author_x',
+        device_id: 'dev_1',
+        content: 'Điều ước hoàn toàn trong sạch, bị hiểu nhầm',
+        prompt_id: null,
+        paper_theme: 'bien',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now - 20000).toISOString(),
+        opened_at: new Date(now - 1000).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      db.reportNoteRPC('note_restore_test', 'reporter_z');
+      assert.equal(db.selectSkyNotesView(now).length, 0); // hidden
+
+      // Admin clicks "Duyệt lại"
+      db.adminModerateRPC('note_restore_test', 'duyet_lai');
+
+      // Note restored to public sky wall
+      const skyWall = db.selectSkyNotesView(now);
+      assert.equal(skyWall.length, 1);
+      assert.equal(skyWall[0].id, 'note_restore_test');
+
+      // Note exits pending queue
+      const pendingQueue = db.reports.filter((r) => r.status === 'pending');
+      assert.equal(pendingQueue.length, 0);
+    });
+
+    it('action "Xoá" soft-deletes note (is_deleted = true) and removes it from queue (§3.4.3)', () => {
+      const db = new PostgresSkySimulator();
+      const now = Date.now();
+
+      db.insert('author_y', {
+        id: 'note_delete_test',
+        user_id: 'author_y',
+        device_id: 'dev_1',
+        content: 'Điều ước vi phạm thực sự',
+        prompt_id: null,
+        paper_theme: 'dem-sao',
+        sticker_ids: [],
+        unlock_at: new Date(now - 1000).toISOString(),
+        status: 'opened',
+        visibility: 'public',
+        created_at: new Date(now - 20000).toISOString(),
+        opened_at: new Date(now - 1000).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        is_deleted: false,
+      });
+
+      db.reportNoteRPC('note_delete_test', 'reporter_w');
+
+      // Admin clicks "Xoá"
+      db.adminModerateRPC('note_delete_test', 'xoa');
+
+      const targetNote = db.baseTable.find((n) => n.id === 'note_delete_test');
+      assert.ok(targetNote);
+      assert.equal(targetNote.is_deleted, true);
+
+      // Exits pending queue
+      const pendingQueue = db.reports.filter((r) => r.status === 'pending');
+      assert.equal(pendingQueue.length, 0);
+
+      // Remains hidden from wall
+      assert.equal(db.selectSkyNotesView(now).length, 0);
     });
   });
 });

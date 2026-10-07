@@ -20,7 +20,7 @@ import { Step1Prompt } from './Step1Prompt';
 import { Step2Content } from './Step2Content';
 import { Step3Unlock } from './Step3Unlock';
 import { useAuth } from '@/hooks/useAuth';
-import { containsBadWords, BAD_WORD_REJECTION } from '@/lib/moderation';
+import { validateContentModeration, BAD_WORD_REJECTION } from '@/lib/moderation';
 import { checkPublicRateLimit, RATE_LIMIT_REJECTION } from '@/lib/sky';
 import { getOrCreateUserPseudonym } from '@/lib/pseudonym';
 
@@ -186,8 +186,9 @@ export function Write() {
     let assignedPseudonym: string | undefined;
     if (visibility === 'public') {
       // Layer 1: Pre-filter bad words (§3.4)
-      if (containsBadWords(content)) {
-        showToast(BAD_WORD_REJECTION);
+      const moderationResult = await validateContentModeration(content);
+      if (!moderationResult.allowed) {
+        showToast(moderationResult.message || BAD_WORD_REJECTION);
         return;
       }
 

@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, CheckCircle, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Shield, CheckCircle, Trash2, RefreshCw, ArrowUpDown } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
+import { NotFound } from '@/pages/NotFound';
 
 interface ReportedNoteItem {
   id: string;
   note_id: string;
   reason: string;
   created_at: string;
+  first_reported_at: string;
+  report_count: number;
   status: string;
   content: string | null;
   pseudonym: string | null;
@@ -18,14 +21,15 @@ interface ReportedNoteItem {
 }
 
 export function AdminReports() {
-  const { user, openLoginModal } = useAuth();
+  const { user } = useAuth();
   const [reports, setReports] = useState<ReportedNoteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [sortBy, setSortBy] = useState<'count' | 'time'>('count');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
 
-  // Check admin status and load reports
+  // Check admin status against email allowlist (§3.4 Layer 3)
   const checkAdminAndLoadReports = async () => {
     if (!user) {
       setIsAdmin(false);
@@ -36,22 +40,23 @@ export function AdminReports() {
     setLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        // Check if user is in admin_allowlist
+        // Query admin_allowlist table
         const { data: allowlistData } = await supabase
           .from('admin_allowlist')
           .select('email')
           .eq('email', user.email)
           .maybeSingle();
 
-        // Check env var or allowlist record
-        const envAdmins = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim().toLowerCase());
+        const envAdmins = (import.meta.env.VITE_ADMIN_EMAILS || '')
+          .split(',')
+          .map((e: string) => e.trim().toLowerCase());
         const userEmail = (user.email || '').toLowerCase();
         const hasAccess = Boolean(allowlistData) || envAdmins.includes(userEmail);
 
         setIsAdmin(hasAccess);
 
         if (hasAccess) {
-          // Fetch reported notes
+          // Fetch pending reported notes
           const { data, error } = await supabase
             .from('reports')
             .select(`
@@ -63,29 +68,55 @@ export function AdminReports() {
               notes_base:note_id (
                 content,
                 pseudonym,
-                unlock_at
+                unlock_at,
+                report_count,
+                reported_at
               )
             `)
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            const mapped: ReportedNoteItem[] = data.map((r: any) => ({
-              id: r.id,
-              note_id: r.note_id,
-              reason: r.reason,
-              created_at: r.created_at,
-              status: r.status,
-              content: r.notes_base?.content || '[Nội dung đã bị ẩn hoặc niêm phong]',
-              pseudonym: r.notes_base?.pseudonym || 'Ẩn danh',
-              unlock_at: r.notes_base?.unlock_at || null,
-            }));
-            setReports(mapped);
+            // Group by note_id to present one queue entry per note
+            const byNote = new Map<string, ReportedNoteItem>();
+
+            for (const r of data as any[]) {
+              const noteId = r.note_id;
+              const noteBase = r.notes_base;
+              const existing = byNote.get(noteId);
+
+              if (!existing) {
+                byNote.set(noteId, {
+                  id: r.id,
+                  note_id: noteId,
+                  reason: r.reason,
+                  created_at: r.created_at,
+                  first_reported_at: noteBase?.reported_at || r.created_at,
+                  report_count: Math.max(1, noteBase?.report_count || 1),
+                  status: r.status,
+                  content: noteBase?.content || '[Nội dung đã bị ẩn hoặc niêm phong]',
+                  pseudonym: noteBase?.pseudonym || 'Ẩn danh',
+                  unlock_at: noteBase?.unlock_at || null,
+                });
+              } else {
+                existing.report_count = Math.max(existing.report_count + 1, noteBase?.report_count || 1);
+                if (new Date(r.created_at) < new Date(existing.first_reported_at)) {
+                  existing.first_reported_at = r.created_at;
+                }
+              }
+            }
+
+            setReports(Array.from(byNote.values()));
           }
         }
       } else {
-        // Local mode fallback
-        setIsAdmin(true);
+        // Fallback for local development if email set
+        const envAdmins = (import.meta.env.VITE_ADMIN_EMAILS || '')
+          .split(',')
+          .map((e: string) => e.trim().toLowerCase());
+        const userEmail = (user.email || '').toLowerCase();
+        const hasAccess = envAdmins.includes(userEmail);
+        setIsAdmin(hasAccess);
         setReports([]);
       }
     } catch {
@@ -118,8 +149,13 @@ export function AdminReports() {
         }
       }
 
+      // After actioned, note exits queue immediately
       setReports((prev) => prev.filter((r) => r.note_id !== noteId));
-      setToastMessage(action === 'duyet_lai' ? 'Đã duyệt lại và mở lại điều ước ✨' : 'Đã xoá điều ước khỏi vũ trụ 🗑️');
+      setToastMessage(
+        action === 'duyet_lai'
+          ? 'Đã duyệt lại và mở lại điều ước trên bầu trời ✨'
+          : 'Đã xoá điều ước khỏi vũ trụ 🗑️'
+      );
       setToastVisible(true);
     } catch {
       setToastMessage('Có lỗi xảy ra, vui lòng thử lại.');
@@ -127,41 +163,31 @@ export function AdminReports() {
     }
   };
 
-  if (!user) {
+  // Sort reports
+  const sortedReports = useMemo(() => {
+    const list = [...reports];
+    if (sortBy === 'count') {
+      return list.sort((a, b) => b.report_count - a.report_count);
+    }
+    return list.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [reports, sortBy]);
+
+  // Loading state
+  if (loading) {
     return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <Shield className="w-12 h-12 text-lavender" />
-        <h2 className="font-display text-xl text-text-primary">Khu vực quản trị</h2>
-        <p className="font-sans text-xs text-text-secondary max-w-xs">
-          Vui lòng đăng nhập bằng tài khoản quản trị để xem hàng đợi báo cáo.
+      <div className="flex flex-1 items-center justify-center py-16" aria-live="polite">
+        <p className="font-display text-2xl text-star-glow animate-pulse">
+          Chờ vũ trụ một chút nha…
         </p>
-        <button
-          type="button"
-          onClick={openLoginModal}
-          className="px-4 py-2 rounded-xl bg-lavender/25 text-lavender-light border border-lavender/40 text-xs font-semibold"
-        >
-          Đăng nhập
-        </button>
       </div>
     );
   }
 
-  if (isAdmin === false) {
-    return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <AlertTriangle className="w-12 h-12 text-amber-400" />
-        <h2 className="font-display text-xl text-text-primary">Truy cập bị từ chối</h2>
-        <p className="font-sans text-xs text-text-secondary max-w-xs">
-          Email {user.email} không nằm trong danh sách quản trị viên bầu trời.
-        </p>
-        <Link
-          to="/bau-troi"
-          className="text-xs text-lavender hover:underline"
-        >
-          ← Quay lại Bầu trời
-        </Link>
-      </div>
-    );
+  // Non-allowlisted users get a 404, not a 403 — do not reveal route exists (§3.4.3)
+  if (!user || isAdmin !== true) {
+    return <NotFound />;
   }
 
   return (
@@ -186,35 +212,52 @@ export function AdminReports() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={checkAdminAndLoadReports}
-          className="p-2 rounded-lg hover:bg-bg-soft text-text-muted hover:text-text-primary"
-          title="Tải lại"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Simple sort by report count (§3.4.3) */}
+          <button
+            type="button"
+            onClick={() => setSortBy((prev) => (prev === 'count' ? 'time' : 'count'))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-soft/80 border border-border-soft text-xs font-sans text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5 text-lavender" />
+            <span>{sortBy === 'count' ? 'Số lần báo cáo' : 'Mới nhất'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={checkAdminAndLoadReports}
+            className="p-2 rounded-lg hover:bg-bg-soft text-text-muted hover:text-text-primary"
+            title="Tải lại"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Report items list */}
-      {reports.length > 0 ? (
+      {sortedReports.length > 0 ? (
         <div className="space-y-4">
-          {reports.map((report) => (
+          {sortedReports.map((report) => (
             <div
-              key={report.id}
+              key={report.note_id}
               className="p-4 rounded-xl border border-rose-500/20 bg-bg-soft/70 space-y-3"
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-mono text-lavender font-medium">
-                  {report.pseudonym}
-                </span>
-                <span className="text-text-muted">
-                  Báo cáo lúc: {new Date(report.created_at).toLocaleString('vi-VN')}
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-lavender font-medium">
+                    {report.pseudonym}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-semibold border border-rose-500/30">
+                    {report.report_count} báo cáo
+                  </span>
+                </div>
+                <span className="text-text-muted text-[11px]">
+                  Báo cáo lần đầu: {new Date(report.first_reported_at).toLocaleString('vi-VN')}
                 </span>
               </div>
 
               <div className="p-3 rounded-lg bg-bg-deep/70 border border-border-soft/60">
-                <p className="font-sans text-xs sm:text-sm text-text-primary whitespace-pre-wrap">
+                <p className="font-sans text-xs sm:text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
                   {report.content}
                 </p>
               </div>

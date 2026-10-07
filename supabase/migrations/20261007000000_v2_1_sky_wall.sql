@@ -148,12 +148,36 @@ CREATE OR REPLACE FUNCTION public.report_note(
   p_reason TEXT DEFAULT 'Inappropriate content'
 )
 RETURNS BOOLEAN AS $$
+DECLARE
+  v_note_owner UUID;
 BEGIN
-  -- 1. Insert report record
+  -- Look up note owner
+  SELECT user_id INTO v_note_owner
+  FROM public.notes_base
+  WHERE id = p_note_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Note not found';
+  END IF;
+
+  -- 1. A user cannot report their own note (§3.4.2)
+  IF auth.uid() IS NOT NULL AND v_note_owner IS NOT NULL AND auth.uid() = v_note_owner THEN
+    RAISE EXCEPTION 'Cannot report your own note';
+  END IF;
+
+  -- 2. A user cannot report the same note twice (§3.4.2)
+  IF auth.uid() IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.reports
+    WHERE note_id = p_note_id AND reporter_user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Already reported';
+  END IF;
+
+  -- 3. Insert report record
   INSERT INTO public.reports (note_id, reporter_user_id, reason, status)
   VALUES (p_note_id, auth.uid(), COALESCE(p_reason, 'Inappropriate content'), 'pending');
 
-  -- 2. Immediately hide note pending review per §3.4
+  -- 4. Immediately hide note pending review per §3.4
   UPDATE public.notes_base
   SET is_reported = TRUE,
       reported_at = timezone('utc'::text, now()),
@@ -281,13 +305,41 @@ SELECT
 FROM public.notes_base
 WHERE auth.uid() = user_id AND is_deleted = FALSE;
 
+-- 10. Content Pre-filter Bad Words Check (§3.4 Layer 1)
+CREATE OR REPLACE FUNCTION public.check_bad_words(p_content TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_normalized TEXT;
+BEGIN
+  IF p_content IS NULL OR length(trim(p_content)) = 0 THEN
+    RETURN FALSE;
+  END IF;
+
+  v_normalized := lower(p_content);
+  -- Match Vietnamese & English profanities and evasion patterns
+  IF v_normalized ~* '\m(dm|dmm|đm|đmm|vcl|vl|vkl|cl|clgt|cmm|cặc|cak|cac|lồn|lon|loz|lz|buồi|buoi|dái|đụ|địt|dit|djt|đĩ|điếm|fuck|fucking|phuck|fuk|shit|bitch|asshole|bastard|dick|pussy|cunt|whore|slut|motherfucker|nigger|faggot)\M'
+     OR v_normalized ~* '(du má|đụ má|dit me|địt mẹ|djt me|con đĩ|gái đĩ|con di|chó đẻ|cho de|khốn nạn|khon nan|ngu lồn|mặt lồn|hãm lồn)'
+     OR v_normalized ~* '(f\s*u\s*c\s*k|s\s*h\s*i\s*t|b\s*i\s*t\s*c\s*h|đ\s*m|d\s*m|v\s*l|c\s*l|c\s*ặ\s*c|l\s*ồ\s*n)' THEN
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION public.handle_notes_insert()
 RETURNS TRIGGER AS $$
 DECLARE
   v_user_pseudonym TEXT;
 BEGIN
-  -- Rate-limit check if user is publishing publicly (§3.5)
+  -- Pre-filter and Rate-limit checks if user is publishing publicly (§3.4, §3.5)
   IF NEW.visibility = 'public' AND COALESCE(NEW.seed, FALSE) = FALSE THEN
+    -- Layer 1: Bad words pre-filter (§3.4)
+    IF public.check_bad_words(NEW.content) THEN
+      RAISE EXCEPTION 'Viết lại nhẹ nhàng hơn nha, vũ trụ nghe hết á 🌙';
+    END IF;
+
+    -- Rate-limit check (§3.5)
     IF NOT public.check_public_rate_limit(auth.uid()) THEN
       RAISE EXCEPTION 'Bạn đã gửi hôm nay rồi, mai quay lại nha 🌙';
     END IF;
@@ -351,8 +403,14 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_user_pseudonym TEXT;
 BEGIN
-  -- Rate-limit check if user transitions from private to public (§3.5)
+  -- Pre-filter and Rate-limit checks if user transitions from private to public (§3.4, §3.5)
   IF NEW.visibility = 'public' AND OLD.visibility = 'private' THEN
+    -- Layer 1: Bad words pre-filter (§3.4)
+    IF public.check_bad_words(COALESCE(NEW.content, (SELECT content FROM public.notes_base WHERE id = OLD.id))) THEN
+      RAISE EXCEPTION 'Viết lại nhẹ nhàng hơn nha, vũ trụ nghe hết á 🌙';
+    END IF;
+
+    -- Rate-limit check (§3.5)
     IF NOT public.check_public_rate_limit(auth.uid()) THEN
       RAISE EXCEPTION 'Bạn đã gửi hôm nay rồi, mai quay lại nha 🌙';
     END IF;

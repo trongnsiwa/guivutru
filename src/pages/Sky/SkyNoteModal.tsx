@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Flag, Sparkles, Lock } from 'lucide-react';
-import { SkyNote } from '@/lib/sky';
+import { SkyNote, getLocalReportedNoteIds } from '@/lib/sky';
+import { useNotes } from '@/hooks/useNotes';
 import { PAPER_THEMES } from '@/lib/constants';
 import { format } from 'date-fns';
 
@@ -13,10 +14,14 @@ export interface SkyNoteModalProps {
 }
 
 export function SkyNoteModal({ note, isOpen, onClose, onReport }: SkyNoteModalProps) {
+  const { notes } = useNotes();
   const [reporting, setReporting] = useState(false);
   const [showConfirmReport, setShowConfirmReport] = useState(false);
 
   if (!note) return null;
+
+  const isOwnNote = notes.some((n) => n.id === note.id);
+  const isAlreadyReported = getLocalReportedNoteIds().has(note.id);
 
   const now = Date.now();
   const isSealed = note.status === 'sealed' && note.unlockAt > now;
@@ -123,37 +128,47 @@ export function SkyNoteModal({ note, isOpen, onClose, onReport }: SkyNoteModalPr
             {/* Footer with small report link (§3.4 Layer 2) */}
             <div className="flex items-center justify-between pt-3 border-t border-white/10 text-xs">
               <span className="font-sans text-text-muted text-[11px]">
-                {note.seed ? 'Điều ước từ vũ trụ' : 'Ẩn danh trên bầu trời'}
+                {note.seed
+                  ? 'Điều ước từ vũ trụ'
+                  : isOwnNote
+                  ? 'Điều ước của bạn'
+                  : 'Ẩn danh trên bầu trời'}
               </span>
 
-              {!showConfirmReport ? (
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmReport(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-sans text-text-muted hover:text-rose-400 transition-colors focus-visible:outline-none focus-visible:underline"
-                >
-                  <Flag className="w-3 h-3" />
-                  <span>Báo cáo</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 animate-fade-in">
-                  <span className="text-[11px] text-rose-300">Ẩn điều ước này?</span>
+              {!isOwnNote && (
+                isAlreadyReported ? (
+                  <span className="text-[11px] font-sans text-text-muted italic select-none">
+                    Đã báo cáo
+                  </span>
+                ) : !showConfirmReport ? (
                   <button
                     type="button"
-                    onClick={handleConfirmReport}
-                    disabled={reporting}
-                    className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 text-[11px] font-semibold"
+                    onClick={() => setShowConfirmReport(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-sans text-text-muted hover:text-rose-400 transition-colors focus-visible:outline-none focus-visible:underline"
                   >
-                    {reporting ? 'Đang ẩn...' : 'Xác nhận'}
+                    <Flag className="w-3 h-3" />
+                    <span>Báo cáo</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmReport(false)}
-                    className="text-[11px] text-text-muted hover:text-text-primary px-1"
-                  >
-                    Huỷ
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2 animate-fade-in">
+                    <span className="text-[11px] text-rose-300">Ẩn điều ước này?</span>
+                    <button
+                      type="button"
+                      onClick={handleConfirmReport}
+                      disabled={reporting}
+                      className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 text-[11px] font-semibold"
+                    >
+                      {reporting ? 'Đang ẩn...' : 'Xác nhận'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmReport(false)}
+                      className="text-[11px] text-text-muted hover:text-text-primary px-1"
+                    >
+                      Huỷ
+                    </button>
+                  </div>
+                )
               )}
             </div>
           </motion.div>

@@ -16,7 +16,7 @@ import { STORAGE_KEYS } from '@/lib/constants';
 import { useAuth } from '@/hooks/useAuth';
 import { getOrCreateUserPseudonym } from '@/lib/pseudonym';
 import { checkPublicRateLimit, RATE_LIMIT_REJECTION } from '@/lib/sky';
-import { containsBadWords, BAD_WORD_REJECTION } from '@/lib/moderation';
+import { validateContentModeration, BAD_WORD_REJECTION } from '@/lib/moderation';
 import { UnlockSequence } from './NoteDetail/UnlockSequence';
 
 export function NoteDetail() {
@@ -130,11 +130,14 @@ export function NoteDetail() {
       }
 
       // Layer 1: Pre-filter bad words (§3.4)
-      if (note.content && containsBadWords(note.content)) {
-        setShowPublishModal(false);
-        setToastMessage(BAD_WORD_REJECTION);
-        setToastVisible(true);
-        return;
+      if (note.content) {
+        const modRes = await validateContentModeration(note.content);
+        if (!modRes.allowed) {
+          setShowPublishModal(false);
+          setToastMessage(modRes.message || BAD_WORD_REJECTION);
+          setToastVisible(true);
+          return;
+        }
       }
 
       // Layer 3.5: Rate limiting check (1/day, 5/week) (§3.5)
