@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { SkyNote } from '@/lib/sky';
+import { SkyNote, computeStarCoordinates } from '@/lib/sky';
 import { PAPER_THEMES } from '@/lib/constants';
 
 export interface SkyCanvasProps {
@@ -20,18 +20,6 @@ interface SkyStar {
   isSealed: boolean;
 }
 
-/**
- * 32-bit avalanche finalizer for uniform star distribution
- */
-function mixHash(h: number): number {
-  h ^= h >>> 16;
-  h = Math.imul(h, 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  h ^= h >>> 16;
-  return h >>> 0;
-}
-
 export function SkyCanvas({ notes, featuredNoteId, onSelectNote }: SkyCanvasProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const now = Date.now();
@@ -41,35 +29,11 @@ export function SkyCanvas({ notes, featuredNoteId, onSelectNote }: SkyCanvasProp
   const stars: SkyStar[] = useMemo(() => {
     return notes.map((note) => {
       const isFeatured = featuredNoteId ? note.id === featuredNoteId : false;
-      let xPercent: number;
-      let yPercent: number;
-
-      if (isFeatured) {
-        // Featured star sits at visual center of canvas (Bug 1 fix)
-        xPercent = 50.0;
-        yPercent = 48.0;
-      } else {
-        // Deterministic hash from note.id (same hash function as ConstellationView)
-        const rawHash = note.id
-          .split('')
-          .reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 0);
-        const hash = mixHash(rawHash);
-
-        const angle = ((hash % 360) * Math.PI) / 180;
-        const rx = 15 + ((hash >>> 8) % 32);
-        const ry = 13 + ((hash >>> 16) % 27);
-        let x = 50 + Math.cos(angle) * rx;
-        let y = 48 + Math.sin(angle) * ry;
-
-        // Ensure surrounding stars do not crowd or collide with visual center
-        if (featuredNoteId && Math.hypot(x - 50, y - 48) < 14) {
-          x = 50 + Math.cos(angle) * 16;
-          y = 48 + Math.sin(angle) * 15;
-        }
-
-        xPercent = Math.min(92, Math.max(8, x));
-        yPercent = Math.min(88, Math.max(12, y));
-      }
+      const { xPercent, yPercent } = computeStarCoordinates(
+        note.id,
+        isFeatured,
+        Boolean(featuredNoteId)
+      );
 
       const isSealed = note.status === 'sealed' && note.unlockAt > now;
       const ageMs = Math.max(0, now - note.createdAt);

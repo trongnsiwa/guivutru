@@ -512,3 +512,145 @@ export async function checkPublicRateLimit(userId: string): Promise<{ allowed: b
 
   return { allowed: true };
 }
+
+/**
+ * 32-bit avalanche finalizer for uniform star distribution
+ */
+export function mixHash(h: number): number {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+/**
+ * Computes deterministic coordinates for a star based on note.id (§4 A1, SkyCanvas).
+ * Pins featured star at visual canvas center (50%, 48%).
+ * When avoidCenter is true, pushes surrounding stars away from center to avoid collision.
+ */
+export function computeStarCoordinates(
+  noteId: string,
+  isFeatured = false,
+  avoidCenter = true
+): { xPercent: number; yPercent: number } {
+  if (isFeatured) {
+    return { xPercent: 50.0, yPercent: 48.0 };
+  }
+
+  const rawHash = noteId
+    .split('')
+    .reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 0);
+  const hash = mixHash(rawHash);
+
+  const angle = ((hash % 360) * Math.PI) / 180;
+  const rx = 15 + ((hash >>> 8) % 32);
+  const ry = 13 + ((hash >>> 16) % 27);
+  let x = 50 + Math.cos(angle) * rx;
+  let y = 48 + Math.sin(angle) * ry;
+
+  if (avoidCenter && Math.hypot(x - 50, y - 48) < 14) {
+    x = 50 + Math.cos(angle) * 16;
+    y = 48 + Math.sin(angle) * 15;
+  }
+
+  return {
+    xPercent: Math.min(92, Math.max(8, x)),
+    yPercent: Math.min(88, Math.max(12, y)),
+  };
+}
+
+/**
+ * Deterministic preview note selection for the Landing page (§4 A1):
+ * 1. sort by createdAt desc
+ * 2. take the first `limit`
+ * 3. if the result contains zero sealed notes AND the source contains at least
+ *    one sealed note, swap the last slot for the most recent sealed note
+ */
+export function pickPreviewNotes(notes: SkyNote[], limit = 12): SkyNote[] {
+  if (!notes || notes.length === 0 || limit <= 0) return [];
+  const sorted = [...notes].sort((a, b) => b.createdAt - a.createdAt);
+  const picked = sorted.slice(0, limit);
+  const hasSealed = picked.some((n) => n.status === 'sealed');
+  if (!hasSealed) {
+    const mostRecentSealed = sorted.find((n) => n.status === 'sealed');
+    if (mostRecentSealed && picked.length > 0) {
+      picked[picked.length - 1] = mostRecentSealed;
+    }
+  }
+  return picked;
+}
+
+/**
+ * Upcoming anticipation notes selection (§4 A2):
+ * Returns up to `limit` sealed public notes unlocking in the future,
+ * ordered by unlockAt ascending.
+ */
+export function pickUpcomingNotes(
+  notes: SkyNote[],
+  nowMs: number = Date.now(),
+  limit = 3
+): SkyNote[] {
+  if (!notes || notes.length === 0 || limit <= 0) return [];
+  return [...notes]
+    .filter((n) => n.status === 'sealed' && n.unlockAt > nowMs)
+    .sort((a, b) => a.unlockAt - b.unlockAt)
+    .slice(0, limit);
+}
+
+/**
+ * Formats countdown days string for upcoming notes (§4 A2, §7):
+ * - >= 1 day: "{N} ngày nữa"
+ * - today / 0 days: "Hôm nay"
+ */
+export function formatCountdownDays(unlockAt: number, nowMs: number): string {
+  const diffMs = unlockAt - nowMs;
+  const days = Math.floor(diffMs / 86400000);
+  if (days <= 0) {
+    return 'Hôm nay';
+  }
+  return `${days} ngày nữa`;
+}
+
+/**
+ * Live star count query for landing sky card (§4 A3).
+ * Performs a HEAD request ({ count: 'exact', head: true }) on sky_notes.
+ * Returns exact number if resolved, or null (never 0) on failure, timeout, or unconfigured Supabase.
+ */
+export async function fetchSkyCount(
+  client = supabase,
+  timeoutMs = 2000
+): Promise<number | null> {
+  if (!isSupabaseConfigured || !client) {
+    return null;
+  }
+
+  let timer: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  try {
+    const queryPromise = (async () => {
+      try {
+        const { count, error } = await client
+          .from('sky_notes')
+          .select('*', { count: 'exact', head: true });
+
+        if (error || count === null || typeof count !== 'number') {
+          return null;
+        }
+        return count;
+      } catch {
+        return null;
+      }
+    })();
+
+    const result = await Promise.race([queryPromise, timeoutPromise]);
+    return result;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+

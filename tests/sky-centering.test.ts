@@ -1,37 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-
-function mixHash(h: number): number {
-  h ^= h >>> 16;
-  h = Math.imul(h, 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  h ^= h >>> 16;
-  return h >>> 0;
-}
-
-function computeStarCoordinates(noteId: string, isFeatured: boolean) {
-  if (isFeatured) {
-    return { xPercent: 50.0, yPercent: 48.0 };
-  }
-  const rawHash = noteId.split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 0);
-  const hash = mixHash(rawHash);
-  const angle = ((hash % 360) * Math.PI) / 180;
-  const rx = 15 + ((hash >>> 8) % 32);
-  const ry = 13 + ((hash >>> 16) % 27);
-  let x = 50 + Math.cos(angle) * rx;
-  let y = 48 + Math.sin(angle) * ry;
-
-  if (Math.hypot(x - 50, y - 48) < 14) {
-    x = 50 + Math.cos(angle) * 16;
-    y = 48 + Math.sin(angle) * 15;
-  }
-
-  return {
-    xPercent: Math.min(92, Math.max(8, x)),
-    yPercent: Math.min(88, Math.max(12, y)),
-  };
-}
+import { computeStarCoordinates, mixHash } from '../src/lib/sky.ts';
 
 describe('Bug 1 Verification: Featured Star Center & Determinism', () => {
   it('places the featured (newest) star at visual canvas center (50%, 48%)', () => {
