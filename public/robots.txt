@@ -1,2 +1,12 @@
 User-agent: *
 Allow: /
+
+Disallow: /toi
+Disallow: /note/
+Disallow: /viet/xong
+Disallow: /bau-troi
+Disallow: /bau-troi/cua-troi
+Disallow: /admin/bao-cao
+Disallow: /dev/
+
+Sitemap: https://guivutru.pages.dev/sitemap.xml
