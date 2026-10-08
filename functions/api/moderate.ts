@@ -1,4 +1,4 @@
-import badWordsList from '../bad-words.json' with { type: 'json' };
+import badWordsList from '../bad-words.json';
 
 const BAD_WORD_REJECTION = 'Viết lại nhẹ nhàng hơn nha, vũ trụ nghe hết á 🌙';
 
