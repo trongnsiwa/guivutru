@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { validateContentModeration, BAD_WORD_REJECTION } from '@/lib/moderation';
 import { checkPublicRateLimit, RATE_LIMIT_REJECTION } from '@/lib/sky';
 import { getOrCreateUserPseudonym } from '@/lib/pseudonym';
+import { saveLocalAudio } from '@/lib/audioDb';
 
 export function Write() {
   const navigate = useNavigate();
@@ -39,6 +40,9 @@ export function Write() {
     unlockAt,
     visibility,
     sessionActive,
+    hasAudio,
+    audioBlob,
+    audioDuration,
     setStep,
     setContent,
     setPromptId,
@@ -48,6 +52,8 @@ export function Write() {
     setUnlockAt,
     setVisibility,
     setSessionActive,
+    setAudio,
+    clearAudio,
     reset,
   } = useWriteStore(
     useShallow((s) => ({
@@ -60,6 +66,9 @@ export function Write() {
       unlockAt: s.unlockAt,
       visibility: s.visibility,
       sessionActive: s.sessionActive,
+      hasAudio: s.hasAudio,
+      audioBlob: s.audioBlob,
+      audioDuration: s.audioDuration,
       setStep: s.setStep,
       setContent: s.setContent,
       setPromptId: s.setPromptId,
@@ -69,6 +78,8 @@ export function Write() {
       setUnlockAt: s.setUnlockAt,
       setVisibility: s.setVisibility,
       setSessionActive: s.setSessionActive,
+      setAudio: s.setAudio,
+      clearAudio: s.clearAudio,
       reset: s.reset,
     }))
   );
@@ -89,9 +100,9 @@ export function Write() {
   // If sessionActive is false OR store has no meaningful content, reset to full defaults only if dirty.
   useEffect(() => {
     if (queryStep) return;
-    const hasMeaningfulContent = Boolean(content.trim() || promptId || promptChosen);
+    const hasMeaningfulContent = Boolean(content.trim() || promptId || promptChosen || hasAudio);
     if (!sessionActive || !hasMeaningfulContent) {
-      if (sessionActive || content || promptId || promptChosen || step !== 1) {
+      if (sessionActive || content || promptId || promptChosen || hasAudio || step !== 1) {
         reset();
       }
     }
@@ -103,11 +114,11 @@ export function Write() {
     // If on Step 2 without a chosen prompt, redirect to Step 1
     if (step === 2 && !promptChosen) {
       setStep(1);
-    } else if (step === 3 && content.trim().length < 5) {
-      // If on Step 3 with invalid content (< 5 chars), redirect to Step 2
+    } else if (step === 3 && !hasAudio && content.trim().length < 5) {
+      // If on Step 3 with invalid content (< 5 chars and no audio), redirect to Step 2
       setStep(2);
     }
-  }, [queryStep, step, promptChosen, content, setStep]);
+  }, [queryStep, step, promptChosen, content, hasAudio, setStep]);
 
   // Support direct step testing via query param (e.g. /viet?step=2)
   useEffect(() => {
@@ -147,6 +158,7 @@ export function Write() {
       content,
       paperTheme,
       stickerIds,
+      hasAudio,
     });
 
     if (!result.success) {
@@ -174,6 +186,7 @@ export function Write() {
       paperTheme,
       stickerIds,
       unlockAt: activeUnlockAt,
+      hasAudio,
     });
 
     if (!result.success) {
@@ -186,10 +199,12 @@ export function Write() {
     let assignedPseudonym: string | undefined;
     if (visibility === 'public') {
       // Layer 1: Pre-filter bad words (§3.4)
-      const moderationResult = await validateContentModeration(content);
-      if (!moderationResult.allowed) {
-        showToast(moderationResult.message || BAD_WORD_REJECTION);
-        return;
+      if (content.trim()) {
+        const moderationResult = await validateContentModeration(content);
+        if (!moderationResult.allowed) {
+          showToast(moderationResult.message || BAD_WORD_REJECTION);
+          return;
+        }
       }
 
       // Acceptance: Publishing requires login (§3.7)
@@ -212,8 +227,9 @@ export function Write() {
     }
 
     // Create note object
+    const noteId = nanoid(12);
     const newNote: Note = {
-      id: nanoid(12),
+      id: noteId,
       content: content.trim(),
       promptId,
       paperTheme,
@@ -224,11 +240,17 @@ export function Write() {
       openedAt: null,
       visibility,
       pseudonym: assignedPseudonym,
+      hasAudio: Boolean(hasAudio),
     };
+
+    // If note has an audio recording, persist it to IndexedDB
+    if (hasAudio && audioBlob) {
+      await saveLocalAudio(noteId, audioBlob, audioDuration);
+    }
 
     // Save to localStorage and sync if authenticated
     try {
-      await useNotes.getState().addNote(newNote);
+      await useNotes.getState().addNote(newNote, audioBlob || undefined);
     } catch {
       showToast('Không lưu được rồi, thử lại nha 🥲');
       return;
@@ -341,7 +363,7 @@ export function Write() {
               duration: 0.15,
               ease: 'easeOut',
             }}
-            className="w-full flex-1 flex flex-col items-center"
+            className="w-full flex-1 flex flex-col items-center min-w-0"
           >
             {currentStep === 1 && (
               <Step1Prompt
@@ -359,6 +381,14 @@ export function Write() {
                 stickerIds={stickerIds}
                 onStickerIdsChange={setStickerIds}
                 onStickerMaxReached={() => showToast('Chỉ dán tối đa 3 sticker nha 🥺')}
+                hasAudio={hasAudio}
+                audioBlob={audioBlob}
+                audioDuration={audioDuration}
+                onAudioChange={(blob, duration) => {
+                  if (!sessionActive) setSessionActive(true);
+                  setAudio(blob, duration);
+                }}
+                onAudioDelete={clearAudio}
               />
             )}
 

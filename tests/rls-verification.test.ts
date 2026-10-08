@@ -26,6 +26,64 @@ interface DBRow {
 class PostgresPostgrestSimulator {
   private baseTable: DBRow[] = [];
   private reportsTable: Array<{ id: string; note_id: string; reporter_user_id: string | null; reason: string }> = [];
+  private storageObjects: Array<{ bucket_id: string; name: string; owner_id: string; content: string }> = [];
+
+  insertStorageObject(
+    callerUserId: string,
+    obj: { bucket_id: string; name: string; owner_id: string; content: string }
+  ) {
+    // Policy: "Users can upload own note audio"
+    // WITH CHECK (bucket_id = 'note-audio' AND auth.uid()::text = (storage.foldername(name))[1])
+    const folderUser = obj.name.split('/')[0];
+    if (callerUserId !== folderUser) {
+      throw new Error('Storage RLS policy violation: Cannot upload to another user folder');
+    }
+    this.storageObjects.push(obj);
+  }
+
+  readStorageObject(
+    callerUserId: string,
+    bucketId: string,
+    objectPath: string,
+    nowMs: number = Date.now()
+  ) {
+    // Policy: "Users can only read unlocked own note audio"
+    // USING (bucket_id = 'note-audio' AND auth.uid()::text = (storage.foldername(name))[1] AND EXISTS (note.unlock_at <= now()))
+    const folderUser = objectPath.split('/')[0];
+    if (callerUserId !== folderUser) {
+      return null; // Not owner
+    }
+
+    const filename = objectPath.split('/')[1] || '';
+    const noteId = filename.split('.')[0];
+    const parentNote = this.baseTable.find((n) => n.id === noteId && !n.is_deleted);
+
+    if (!parentNote) return null;
+    if (parentNote.user_id !== callerUserId) return null;
+
+    // Load-bearing rule: if unlock_at > now, ZERO rows returned / NULL
+    if (new Date(parentNote.unlock_at).getTime() > nowMs) {
+      return null;
+    }
+
+    return this.storageObjects.find((o) => o.bucket_id === bucketId && o.name === objectPath) || null;
+  }
+
+  createSignedUrl(
+    callerUserId: string,
+    bucketId: string,
+    objectPath: string,
+    _expiresIn: number = 60,
+    nowMs: number = Date.now()
+  ): string {
+    const obj = this.readStorageObject(callerUserId, bucketId, objectPath, nowMs);
+    if (!obj) {
+      throw new Error(
+        'Storage RLS violation: Cannot generate signed URL for sealed note audio before unlock_at'
+      );
+    }
+    return `https://supabase.co/storage/v1/object/sign/${bucketId}/${objectPath}?token=mock_signed_token_60s`;
+  }
 
   insert(callerUserId: string, row: DBRow, nowMs: number = Date.now()) {
     // Policy: "Users can insert own notes" WITH CHECK (auth.uid() = user_id)
@@ -428,6 +486,134 @@ describe('RLS & View Security Verification (§2.4 - Load-Bearing Rule)', () => {
     assert.throws(
       () => db.reportNoteRPC(OWNER_ID, 'public_note_1'),
       /Cannot report your own note/
+    );
+  });
+
+  it('TEST 10: VOICE NOTES STORAGE RLS - Sealed audio object is NEVER readable before unlock_at, even by owner', () => {
+    const db = new PostgresPostgrestSimulator();
+
+    // Insert sealed note with future unlock_at and audio
+    db.insert(OWNER_ID, {
+      id: 'note_with_audio_sealed',
+      user_id: OWNER_ID,
+      device_id: 'dev_1',
+      content: 'Điều ước kèm giọng nói bí mật',
+      prompt_id: null,
+      paper_theme: 'dem-sao',
+      sticker_ids: [],
+      unlock_at: FUTURE_UNLOCK,
+      status: 'sealed',
+      visibility: 'private',
+      created_at: new Date(NOW).toISOString(),
+      opened_at: null,
+      updated_at: new Date(NOW).toISOString(),
+      is_deleted: false,
+    }, NOW);
+
+    // Upload audio object to storage bucket 'note-audio'
+    db.insertStorageObject(OWNER_ID, {
+      bucket_id: 'note-audio',
+      name: `${OWNER_ID}/note_with_audio_sealed.webm`,
+      owner_id: OWNER_ID,
+      content: 'RAW_AUDIO_STREAM_DATA',
+    });
+
+    // 1. Owner attempts to read sealed audio BEFORE unlock: MUST RETURN NULL (0 rows / 403 / denied)
+    const sealedFetch = db.readStorageObject(OWNER_ID, 'note-audio', `${OWNER_ID}/note_with_audio_sealed.webm`, NOW);
+    assert.strictEqual(
+      sealedFetch,
+      null,
+      'LOAD-BEARING GUARANTEE: Storage RLS must return NULL for sealed audio before unlock_at'
+    );
+
+    // 2. Stranger attempts to read sealed audio: MUST RETURN NULL
+    const strangerFetch = db.readStorageObject(STRANGER_ID, 'note-audio', `${OWNER_ID}/note_with_audio_sealed.webm`, NOW);
+    assert.strictEqual(strangerFetch, null);
+
+    // 3. Signed URL generation attempt before unlock fails with policy violation
+    assert.throws(
+      () => db.createSignedUrl(OWNER_ID, 'note-audio', `${OWNER_ID}/note_with_audio_sealed.webm`, 60, NOW),
+      /Storage RLS violation: Cannot generate signed URL for sealed note audio before unlock_at/
+    );
+  });
+
+  it('TEST 11: VOICE NOTES STORAGE RLS - Audio becomes readable and signed URL succeeds after unlock_at', () => {
+    const db = new PostgresPostgrestSimulator();
+    const UNLOCK_TIME = NOW + 1000;
+
+    db.insert(OWNER_ID, {
+      id: 'note_audio_unlocked',
+      user_id: OWNER_ID,
+      device_id: 'dev_1',
+      content: 'Điều ước giọng nói đã mở',
+      prompt_id: null,
+      paper_theme: 'dem-sao',
+      sticker_ids: [],
+      unlock_at: new Date(UNLOCK_TIME).toISOString(),
+      status: 'sealed',
+      visibility: 'private',
+      created_at: new Date(NOW).toISOString(),
+      opened_at: null,
+      updated_at: new Date(NOW).toISOString(),
+      is_deleted: false,
+    }, NOW);
+
+    db.insertStorageObject(OWNER_ID, {
+      bucket_id: 'note-audio',
+      name: `${OWNER_ID}/note_audio_unlocked.webm`,
+      owner_id: OWNER_ID,
+      content: 'RAW_AUDIO_STREAM_DATA',
+    });
+
+    // Before unlock: blocked
+    assert.strictEqual(
+      db.readStorageObject(OWNER_ID, 'note-audio', `${OWNER_ID}/note_audio_unlocked.webm`, NOW),
+      null
+    );
+
+    // At unlock_at: readable by owner
+    const unlockedFetch = db.readStorageObject(
+      OWNER_ID,
+      'note-audio',
+      `${OWNER_ID}/note_audio_unlocked.webm`,
+      UNLOCK_TIME
+    );
+    assert.notStrictEqual(unlockedFetch, null);
+    assert.strictEqual(unlockedFetch?.content, 'RAW_AUDIO_STREAM_DATA');
+
+    // Signed URL generation succeeds after unlock_at
+    const signedUrl = db.createSignedUrl(
+      OWNER_ID,
+      'note-audio',
+      `${OWNER_ID}/note_audio_unlocked.webm`,
+      60,
+      UNLOCK_TIME
+    );
+    assert.ok(signedUrl.includes('token='));
+
+    // Stranger still cannot read even after unlock
+    const strangerFetch = db.readStorageObject(
+      STRANGER_ID,
+      'note-audio',
+      `${OWNER_ID}/note_audio_unlocked.webm`,
+      UNLOCK_TIME
+    );
+    assert.strictEqual(strangerFetch, null);
+  });
+
+  it('TEST 12: Storage RLS enforces folder user_id matches auth.uid() during insert', () => {
+    const db = new PostgresPostgrestSimulator();
+
+    // Trying to upload audio into another user's path is rejected
+    assert.throws(
+      () =>
+        db.insertStorageObject(OWNER_ID, {
+          bucket_id: 'note-audio',
+          name: `${STRANGER_ID}/spoofed_note.webm`,
+          owner_id: OWNER_ID,
+          content: 'SPOOF',
+        }),
+      /Storage RLS policy violation/
     );
   });
 });

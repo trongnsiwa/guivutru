@@ -252,4 +252,72 @@ describe('Local-First Sync & Conflict Resolution (§2.5)', () => {
     assert.ok(mergedNotes.some((n) => n.id === 'loc_2'));
     assert.ok(mergedNotes.some((n) => n.id === 'srv_1'));
   });
+
+  it('RULE 9: Voice note sync - Audio note preserves hasAudio flag and uploads alongside note', () => {
+    const audioNote: Note = {
+      ...sampleLocalNote,
+      id: 'loc_audio_1',
+      hasAudio: true,
+      audioPath: 'usr_123/loc_audio_1.webm',
+    };
+
+    const { mergedNotes, notesToUpload } = resolveNoteMerge(
+      [audioNote],
+      [],
+      true // uploadLocalOnly = true
+    );
+
+    assert.strictEqual(notesToUpload.length, 1);
+    assert.strictEqual(notesToUpload[0].hasAudio, true);
+    assert.strictEqual(notesToUpload[0].audioPath, 'usr_123/loc_audio_1.webm');
+    assert.strictEqual(mergedNotes[0].hasAudio, true);
+  });
+
+  it('RULE 10: Conflict copies do not carry audio (conflict copy is text-only per mini-spec)', () => {
+    const localAudioNote: Note = {
+      id: 'note_conflict_audio',
+      serverId: 'note_conflict_audio',
+      content: 'Local text with audio',
+      promptId: null,
+      paperTheme: 'dem-sao',
+      stickerIds: [],
+      unlockAt: Date.now() + 100000,
+      status: 'sealed',
+      createdAt: 1000,
+      openedAt: null,
+      updatedAt: 1500, // Older
+      hasAudio: true,
+      audioPath: 'usr_123/note_conflict_audio.webm',
+    };
+
+    const newerCloudNote: Note = {
+      id: 'note_conflict_audio',
+      serverId: 'note_conflict_audio',
+      content: 'Cloud updated text',
+      promptId: null,
+      paperTheme: 'dem-sao',
+      stickerIds: [],
+      unlockAt: Date.now() + 100000,
+      status: 'sealed',
+      createdAt: 1000,
+      openedAt: null,
+      updatedAt: 2500, // Newer -> cloud wins
+      hasAudio: true,
+      audioPath: 'usr_123/note_conflict_audio.webm',
+    };
+
+    const { mergedNotes, conflictCopiesCount } = resolveNoteMerge(
+      [localAudioNote],
+      [newerCloudNote],
+      false
+    );
+
+    assert.strictEqual(conflictCopiesCount, 1);
+    const conflictCopy = mergedNotes.find((n) => n.id.startsWith('conflict_'))!;
+    assert.ok(conflictCopy);
+    assert.strictEqual(conflictCopy.content, '[Bản sao xung đột] Local text with audio');
+    // Mini-spec: Conflict copies do not carry audio. The copy is text-only.
+    assert.strictEqual(conflictCopy.hasAudio, undefined);
+    assert.strictEqual(conflictCopy.audioPath, undefined);
+  });
 });

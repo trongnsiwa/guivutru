@@ -8,6 +8,7 @@ const fiveSealedNotes: Note[] = [
   {
     id: 'sealed_secret_1',
     content: 'BÍ MẬT TUYỆT ĐỐI KHÔNG ĐƯỢC LỘ - Note 1',
+    promptId: null,
     paperTheme: 'dem-sao',
     stickerIds: ['🌙'],
     unlockAt: Date.now() + 100000000,
@@ -18,6 +19,7 @@ const fiveSealedNotes: Note[] = [
   {
     id: 'sealed_secret_2',
     content: 'BÍ MẬT TUYỆT ĐỐI KHÔNG ĐƯỢC LỘ - Note 2',
+    promptId: null,
     paperTheme: 'tim-mong',
     stickerIds: ['⭐'],
     unlockAt: Date.now() + 100000000,
@@ -28,6 +30,7 @@ const fiveSealedNotes: Note[] = [
   {
     id: 'sealed_secret_3',
     content: 'BÍ MẬT TUYỆT ĐỐI KHÔNG ĐƯỢC LỘ - Note 3',
+    promptId: null,
     paperTheme: 'bien',
     stickerIds: ['🌸'],
     unlockAt: Date.now() + 100000000,
@@ -38,6 +41,7 @@ const fiveSealedNotes: Note[] = [
   {
     id: 'sealed_secret_4',
     content: 'BÍ MẬT TUYỆT ĐỐI KHÔNG ĐƯỢC LỘ - Note 4',
+    promptId: null,
     paperTheme: 'rung',
     stickerIds: ['🍀'],
     unlockAt: Date.now() + 100000000,
@@ -48,6 +52,7 @@ const fiveSealedNotes: Note[] = [
   {
     id: 'sealed_secret_5',
     content: 'BÍ MẬT TUYỆT ĐỐI KHÔNG ĐƯỢC LỘ - Note 5',
+    promptId: null,
     paperTheme: 'giay-cu',
     stickerIds: ['🕯️'],
     unlockAt: Date.now() + 100000000,

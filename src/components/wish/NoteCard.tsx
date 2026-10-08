@@ -46,6 +46,15 @@ export const NoteCard = React.memo(function NoteCard({ note, onDelete }: NoteCar
               ))}
             </span>
           )}
+          {note.hasAudio && (
+            <span
+              className="inline-flex items-center gap-0.5 ml-1 text-xs select-none text-lavender"
+              title="Có bản ghi âm giọng nói"
+              aria-label="Có ghi âm giọng nói"
+            >
+              🎙️
+            </span>
+          )}
         </span>
 
         <div className="flex items-center gap-2">

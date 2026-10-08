@@ -3,12 +3,13 @@ import { Note } from '@/types/note';
 import { storage } from '@/lib/storage';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { uploadNoteToCloud, deleteNoteFromCloud, openNoteOnCloud, updateNoteVisibilityOnCloud } from '@/lib/sync';
+import { uploadAudioToCloud, deleteLocalAudio } from '@/lib/audio';
 import { useAuth } from './useAuth';
 
 interface NotesState {
   notes: Note[];
   loadNotes: () => void;
-  addNote: (note: Note) => Promise<void>;
+  addNote: (note: Note, audioBlob?: Blob) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   openNote: (id: string) => Promise<void>;
   updateNoteVisibility: (id: string, visibility: 'private' | 'public', pseudonym?: string) => Promise<void>;
@@ -21,7 +22,7 @@ export const useNotes = create<NotesState>((set) => ({
     set({ notes: storage.getNotes() });
   },
 
-  addNote: async (note: Note) => {
+  addNote: async (note: Note, audioBlob?: Blob) => {
     // 1. Local-first: immediately write to local storage
     storage.addNote(note);
     set({ notes: storage.getNotes() });
@@ -30,10 +31,19 @@ export const useNotes = create<NotesState>((set) => ({
     const user = useAuth.getState().user;
     if (user && isSupabaseConfigured) {
       try {
-        const uploaded = await uploadNoteToCloud(note, user.id);
+        let noteToUpload = note;
+        if (note.hasAudio && audioBlob) {
+          const uploadRes = await uploadAudioToCloud(user.id, note.id, audioBlob);
+          if (uploadRes.success && uploadRes.audioPath) {
+            noteToUpload = { ...note, audioPath: uploadRes.audioPath };
+          }
+        }
+
+        const uploaded = await uploadNoteToCloud(noteToUpload, user.id);
         storage.updateNote(note.id, {
           serverId: uploaded.serverId || uploaded.id,
           userId: user.id,
+          audioPath: noteToUpload.audioPath,
           updatedAt: uploaded.updatedAt || Date.now(),
         });
         set({ notes: storage.getNotes() });
@@ -46,6 +56,7 @@ export const useNotes = create<NotesState>((set) => ({
   deleteNote: async (id: string) => {
     const existing = storage.getNoteById(id);
     storage.deleteNote(id);
+    await deleteLocalAudio(id);
     set({ notes: storage.getNotes() });
 
     const user = useAuth.getState().user;

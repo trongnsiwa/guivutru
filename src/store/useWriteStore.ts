@@ -14,6 +14,9 @@ export interface WriteState {
   visibility: 'private' | 'public';
   lastSavedNote: Note | null;
   sessionActive: boolean;
+  hasAudio: boolean;
+  audioBlob: Blob | null;
+  audioDuration: number;
 
   // Actions
   setStep: (step: number) => void;
@@ -27,6 +30,8 @@ export interface WriteState {
   setVisibility: (visibility: 'private' | 'public') => void;
   setLastSavedNote: (note: Note | null) => void;
   setSessionActive: (active: boolean) => void;
+  setAudio: (blob: Blob, duration: number) => void;
+  clearAudio: () => void;
   reset: () => void;
 }
 
@@ -41,6 +46,9 @@ const initialState = {
   visibility: 'private' as const,
   lastSavedNote: null as Note | null,
   sessionActive: false,
+  hasAudio: false,
+  audioBlob: null as Blob | null,
+  audioDuration: 0,
 };
 
 export const useWriteStore = create<WriteState>()(
@@ -81,12 +89,23 @@ export const useWriteStore = create<WriteState>()(
       setLastSavedNote: (lastSavedNote: Note | null) => set({ lastSavedNote }),
 
       setSessionActive: (sessionActive: boolean) => set({ sessionActive }),
+      
+      setAudio: (blob: Blob, duration: number) =>
+        set({ hasAudio: true, audioBlob: blob, audioDuration: duration }),
+
+      clearAudio: () =>
+        set({ hasAudio: false, audioBlob: null, audioDuration: 0 }),
 
       reset: () => set(initialState),
     }),
     {
       name: STORAGE_KEYS.WRITE,
       storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => {
+        // Exclude audioBlob (raw Blob object) from sessionStorage JSON serialization
+        const { audioBlob: _, ...rest } = state;
+        return rest;
+      },
     }
   )
 );

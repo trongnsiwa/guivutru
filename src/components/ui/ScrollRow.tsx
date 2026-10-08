@@ -42,7 +42,7 @@ export const ScrollRow = forwardRef<ScrollRowHandle, ScrollRowProps>(
     }, [checkScroll, scrollRef]);
 
     return (
-      <div className={cn('relative w-full', wrapperClassName)}>
+      <div className={cn('relative w-full min-w-0', wrapperClassName)}>
         {/* Left edge fade */}
         <div
           className={cn(
@@ -57,7 +57,7 @@ export const ScrollRow = forwardRef<ScrollRowHandle, ScrollRowProps>(
         <div
           ref={scrollRef}
           className={cn(
-            'no-scrollbar overflow-x-auto overflow-y-hidden flex items-center py-2 px-2 -mx-2 snap-x snap-mandatory [-webkit-overflow-scrolling:touch]',
+            'no-scrollbar overflow-x-auto overflow-y-hidden flex items-center py-2 px-2 -mx-2 snap-x snap-mandatory [-webkit-overflow-scrolling:touch] min-w-0',
             gapClassName,
             className
           )}

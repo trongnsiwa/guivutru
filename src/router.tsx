@@ -16,6 +16,8 @@ const DevFonts = lazy(() => import('@/pages/DevFonts'));
 const DevShareCard = lazy(() => import('@/pages/DevShareCard'));
 const DevSealedSuccess = lazy(() => import('@/pages/DevSealedSuccess'));
 const DevYearInReviewCard = lazy(() => import('@/pages/DevYearInReviewCard'));
+const DevAudioSealed = lazy(() => import('@/pages/DevAudioNotes').then(m => ({ default: m.DevNoteDetailSealed })));
+const DevAudioOpened = lazy(() => import('@/pages/DevAudioNotes').then(m => ({ default: m.DevNoteDetailOpened })));
 
 function withSuspense(Component: React.ComponentType) {
   return (
@@ -42,6 +44,18 @@ const devAppRoutes = import.meta.env.DEV
       {
         path: 'dev/sealed-success',
         element: withSuspense(DevSealedSuccess),
+      },
+      {
+        path: 'note/dev_audio_sealed',
+        element: withSuspense(DevAudioSealed),
+      },
+      {
+        path: 'note/dev_audio_opened',
+        element: withSuspense(DevAudioOpened),
+      },
+      {
+        path: 'dev/toast',
+        element: withSuspense(lazy(() => import('@/pages/DevAudioNotes').then(m => ({ default: m.DevToastPreview })))),
       },
     ]
   : [];

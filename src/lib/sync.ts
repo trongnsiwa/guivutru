@@ -2,6 +2,7 @@ import type { Note, CloudNoteRow } from '../types/note.ts';
 import { cloudRowToNote, noteToCloudRow } from '../types/note.ts';
 import { storage } from './storage.ts';
 import { supabase, isSupabaseConfigured, getDeviceId } from './supabase.ts';
+import { getLocalAudio, uploadAudioToCloud } from './audio.ts';
 
 export interface SyncResult {
   success: boolean;
@@ -155,8 +156,30 @@ export async function fetchUserCloudNotes(): Promise<Note[]> {
 export async function uploadNoteToCloud(note: Note, userId: string): Promise<Note> {
   if (!isSupabaseConfigured || !supabase) return note;
 
+  // Sync integration: Sync uploads audio alongside the note. If note has local audio, upload it.
+  // "If sync fails midway (note uploaded, audio failed), the note remains valid without audio on the server. Do not roll back the note."
+  let audioPath = note.audioPath || null;
+  if (note.hasAudio && !audioPath) {
+    try {
+      const localAudio = await getLocalAudio(note.id);
+      if (localAudio?.blob) {
+        const uploadAudioRes = await uploadAudioToCloud(userId, note.id, localAudio.blob);
+        if (uploadAudioRes.success && uploadAudioRes.audioPath) {
+          audioPath = uploadAudioRes.audioPath;
+        }
+      }
+    } catch (audioErr) {
+      console.warn('[Sync] Audio upload failed alongside note, continuing note upload:', audioErr);
+    }
+  }
+
   const deviceId = getDeviceId();
-  const row = noteToCloudRow(note, userId, deviceId);
+  const noteWithAudio: Note = {
+    ...note,
+    hasAudio: Boolean(note.hasAudio),
+    audioPath: audioPath || undefined,
+  };
+  const row = noteToCloudRow(noteWithAudio, userId, deviceId);
 
   let data: CloudNoteRow | null = null;
   let error: { message: string; code?: string } | null = null;
@@ -203,10 +226,13 @@ export async function uploadNoteToCloud(note: Note, userId: string): Promise<Not
     if (!updated.content && note.content) {
       updated.content = note.content;
     }
+    if (note.hasAudio) {
+      updated.hasAudio = true;
+    }
     return updated;
   }
 
-  return { ...note, serverId: note.id, userId, deviceId };
+  return { ...noteWithAudio, serverId: note.id, userId, deviceId };
 }
 
 /**

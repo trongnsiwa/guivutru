@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { NotePaper } from '@/components/wish/NotePaper';
 import { PaperPicker } from '@/components/wish/PaperPicker';
 import { StickerPicker } from '@/components/wish/StickerPicker';
+import { VoiceRecorder } from '@/components/wish/VoiceRecorder';
 import { PaperTheme } from '@/types/note';
 import { MAX_CONTENT_LENGTH } from '@/lib/constants';
 import { cn } from '@/lib/cn';
@@ -14,6 +15,11 @@ export interface Step2ContentProps {
   stickerIds: string[];
   onStickerIdsChange: (stickers: string[]) => void;
   onStickerMaxReached: () => void;
+  hasAudio?: boolean;
+  audioBlob?: Blob | null;
+  audioDuration?: number;
+  onAudioChange?: (blob: Blob, duration: number) => void;
+  onAudioDelete?: () => void;
 }
 
 export function Step2Content({
@@ -24,6 +30,11 @@ export function Step2Content({
   stickerIds,
   onStickerIdsChange,
   onStickerMaxReached,
+  hasAudio = false,
+  audioBlob = null,
+  audioDuration = 0,
+  onAudioChange,
+  onAudioDelete,
 }: Step2ContentProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,12 +52,12 @@ export function Step2Content({
   }, []);
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-center min-w-0">
       <h1 className="font-display font-normal text-[32px] text-text-primary text-center leading-[1.3] mb-6">
         Viết điều ước của bạn
       </h1>
 
-      <div className="w-full max-w-[420px] space-y-4">
+      <div className="w-full max-w-[420px] space-y-4 min-w-0">
         {/* NotePaper in edit mode */}
         <div className="relative">
           <NotePaper
@@ -61,7 +72,7 @@ export function Step2Content({
           />
         </div>
 
-        {/* Character counter */}
+        {/* Character counter & Voice recorder row */}
         <div className="flex justify-end px-1 -mt-2">
           <span
             className={cn(
@@ -77,8 +88,19 @@ export function Step2Content({
           </span>
         </div>
 
+        {/* Voice Recorder */}
+        {onAudioChange && onAudioDelete && (
+          <VoiceRecorder
+            hasAudio={hasAudio}
+            audioBlob={audioBlob}
+            audioDuration={audioDuration}
+            onAudioChange={onAudioChange}
+            onAudioDelete={onAudioDelete}
+          />
+        )}
+
         {/* Paper Picker */}
-        <div className="space-y-2 pt-1">
+        <div className="space-y-2 pt-1 min-w-0">
           <label className="block text-xs font-semibold text-text-secondary font-sans">
             Chọn giấy:
           </label>
@@ -86,7 +108,7 @@ export function Step2Content({
         </div>
 
         {/* Sticker Picker */}
-        <div className="space-y-2 pt-1">
+        <div className="space-y-2 pt-1 min-w-0">
           <label className="block text-xs font-semibold text-text-secondary font-sans">
             Dán sticker (tối đa 3):
           </label>

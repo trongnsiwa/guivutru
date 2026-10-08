@@ -20,6 +20,8 @@ export interface Note {
   publishedAt?: number;
   visibility?: 'private' | 'public';
   pseudonym?: string;
+  hasAudio?: boolean;
+  audioPath?: string | null;
   seed?: boolean;
   isDeleted?: boolean;
   isLocalOnly?: boolean;
@@ -37,6 +39,8 @@ export interface CloudNoteRow {
   status: 'sealed' | 'opened';
   visibility: 'private' | 'public';
   pseudonym?: string | null;
+  has_audio?: boolean;
+  audio_path?: string | null;
   seed?: boolean;
   published_at?: string | null;
   created_at: string;
@@ -63,6 +67,8 @@ export function cloudRowToNote(row: CloudNoteRow): Note {
     publishedAt: row.published_at ? new Date(row.published_at).getTime() : undefined,
     visibility: row.visibility,
     pseudonym: row.pseudonym ?? undefined,
+    hasAudio: Boolean(row.has_audio),
+    audioPath: row.audio_path ?? undefined,
     seed: row.seed,
     isDeleted: row.is_deleted,
     isLocalOnly: false,
@@ -82,6 +88,8 @@ export function noteToCloudRow(note: Note, userId: string, deviceId?: string | n
     status: note.status,
     visibility: note.visibility || 'private',
     pseudonym: note.pseudonym || null,
+    has_audio: Boolean(note.hasAudio),
+    audio_path: note.audioPath || null,
     seed: note.seed || false,
     published_at: note.publishedAt ? new Date(note.publishedAt).toISOString() : undefined,
     created_at: note.createdAt ? new Date(note.createdAt).toISOString() : undefined,

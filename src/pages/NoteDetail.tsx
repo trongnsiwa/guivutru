@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 
 import { useNotes } from '@/hooks/useNotes';
 import { NotePaper } from '@/components/wish/NotePaper';
+import { AudioPlayer } from '@/components/wish/AudioPlayer';
 import { CountdownBadge } from '@/components/wish/CountdownBadge';
 import { ShareCard } from '@/components/wish/ShareCard';
 import { Button } from '@/components/ui/Button';
@@ -201,6 +202,16 @@ export function NoteDetail() {
         </Link>
         <CountdownBadge unlockAt={note.unlockAt} />
       </div>
+
+      {/* Voice Note Audio Player */}
+      {note.hasAudio && (
+        <AudioPlayer
+          noteId={note.id}
+          isSealed={isSealed}
+          audioPath={note.audioPath}
+          className="mb-1"
+        />
+      )}
 
       {/* Note Paper Container with Fade + Scale Animation */}
       <motion.div
