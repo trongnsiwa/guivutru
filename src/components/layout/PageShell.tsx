@@ -29,7 +29,10 @@ export function PageShell() {
       link.setAttribute('rel', 'canonical');
       document.head.appendChild(link);
     }
-    link.setAttribute('href', `https://guivutru.pages.dev${location.pathname}`);
+    const origin = typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'https://guivutru.pages.dev';
+    link.setAttribute('href', `${origin}${location.pathname}`);
   }, [location.pathname]);
 
   return (

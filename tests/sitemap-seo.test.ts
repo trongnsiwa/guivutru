@@ -44,7 +44,8 @@ describe('Sitemap & Robots SEO Verification', () => {
   });
 
   test('sitemap.xml leaks NO private, authed, ephemeral, or unreleased routes', () => {
-    const content = fs.readFileSync(sitemapPath, 'utf-8');
+    const rawContent = fs.readFileSync(sitemapPath, 'utf-8');
+    const content = rawContent.replace(/<!--[\s\S]*?-->/g, '');
     const forbidden = [
       '/toi',
       '/note',

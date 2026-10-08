@@ -5,7 +5,9 @@ Disallow: /toi
 Disallow: /note/
 Disallow: /viet/xong
 Disallow: /bau-troi
+Disallow: /bau-troi/cua-toi
 Disallow: /bau-troi/cua-troi
+Disallow: /admin/
 Disallow: /admin/bao-cao
 Disallow: /dev/
 
