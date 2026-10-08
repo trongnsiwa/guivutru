@@ -13,8 +13,8 @@
 | **Repo**           | gui-vu-tru (local)                                        |
 | **Stack**          | Vite + React 18 + TS + Tailwind + Framer Motion + Zustand |
 | **Hosting**        | Cloudflare Pages — live at guivutru.pages.dev             |
-| **Status**         | v1 features complete. Real-device matrix pending.         |
-| **Last worked on** | 2026-10-06                                                |
+| **Status**         | v2.0, v2.1, v2.2 shipped to production. Voice notes shipped.         |
+| **Last worked on** | 2026-10-08                                                |
 
 ---
 
@@ -128,6 +128,36 @@
   - Motion override for local development: `src/lib/motion.ts` (`?motion=force` / `?motion=reduce`).
   - Pre-launch CLS fix: Font metric overrides (`size-adjust`, `ascent-override`, `descent-override`, `line-gap-override`) in `src/styles/fonts.css` and display font preload in `index.html` eliminate font reflow CLS (reduced from 0.18-0.20 down to <0.006, Lighthouse score 1.0/1.0 across 10/10 runs). LCP target amended in SPEC §12 to reflect simulated 4G median reality (Performance ≥ 90, LCP ≤ 2.5s).
 
+### ✅ Phase 5 — v2.0 "Đám mây" (Cloud) (shipped 2026-10-08)
+
+- Supabase PostgreSQL + Auth + RLS backend foundation.
+- Magic link OTP-only authentication flow.
+- Load-bearing RLS rule: sealed notes return `content = null` before `unlock_at`.
+- Security definer triggers for CRUD on `notes` view.
+- Client-side and server-side local-first merge with sync conflict resolution.
+
+### ✅ Phase 6 — v2.1 "Bầu trời" (Sky) (shipped 2026-10-08)
+
+- Anonymous cosmos wish wall (`/bau-troi`) with zero PII exposure.
+- Content moderation Layer 1 (pre-filter profanity check) & Layer 2 (report and instant hide via `report_note` RPC).
+- Server-side rate limiting (1 public note/24h, 5 public notes/7d).
+- Admin moderation queue (`/admin/bao-cao`) with allowlisted email gating (404 for non-admins).
+- Stable Vietnamese pseudonyms for public note authors.
+
+### ✅ Phase 7 — v2.2 "Nhắc nhở & Nhà" (Reminders & Home) (shipped 2026-10-08)
+
+- Idempotent email unlock reminders via Resend API integration.
+- Zalo Official Account reminder architecture (feature-flagged).
+- PWA manifest and service worker with offline read caching.
+- Capped reactions on public notes (🌙 ⭐ 💗).
+- Year in Review anniversary recap card generation.
+
+### ✅ Phase 8 — Voice Notes (shipped 2026-10-08)
+
+- 30-second audio clip recording and playback for time capsules.
+- Private Supabase Storage bucket `note-audio` with 5MB cap and mime validation.
+- Database-level RLS on `storage.objects` enforcing `unlock_at <= now()` before audio retrieval or signed URL creation.
+
 ---
 
 ## 4. Known Issues / Open Bugs
@@ -146,49 +176,33 @@
 | P-10 | Live / Performance regression under simulated 4G (76 vs prior 98)        | 🟡 P1    | Closed — diagnostic proved measurement noise (16 pt spread, TBT 0ms across all 5 runs). No code change needed. |
 | P-11 | Footer color contrast below WCAG AA (3.49:1 on nav links, 2.30:1 on tagline) | 🟡 P1 | Closed (see Fix 1)                                     |
 | P-12 | meta-viewport blocks user zoom                                           | 🟡 P1    | Closed (see Fix 2)                                     |
-| P-13 | Intermittent CLS on live / (0.18–0.20 in ~40% of loads)                   | 🟡 P1    | Closed (see Fix — font fallback overrides + display preload) |
-| SEC-01 | Supabase Auth Provider Configuration (Manual Dashboard Action) | 🟡 P1 | Open — Disable Email/Password provider and all OAuth providers in Supabase production and staging dashboards (enforce magic-link OTP only per V2.md §12 decision 3). |
+| SEC-01 | Supabase Auth Provider Configuration (Manual Dashboard Action) | 🟡 P1 | Closed (verified 2026-10-08: magic link OTP enforced, password/OAuth disabled in Supabase dashboard) |
+| P-14 | Real-device matrix (§10 step 9) skipped by owner decision on 2026-10-08. iOS Safari MediaRecorder codec, iOS PWA install flow, and low-end Android perf are UNVERIFIED in prod. | 🟡 P1 | Open |
 
 ---
 
 ## 5. What's Next (Priority Order)
 
-### 🎯 IMMEDIATE — Real-Device Verification Matrix
+Ranked by impact-to-effort from `V2.md` §5 backlog:
 
-**Action:** Execute physical device validation per acceptance criteria:
-
-1. **Android device (Chrome):**
-   - Verify layout and font subset rendering (`Ingrid Darling`, `Nunito`, `Sriracha`).
-   - Test Vietnamese keyboard input (Telex/VNI) in Step 2 textarea.
-   - Verify direct PNG download from `/viet/xong`.
-2. **iOS device (Safari):**
-   - Confirm native share sheet via `navigator.share({ files })` with pre-rendered PNG blob (P-05).
-   - Confirm Ingrid Darling displays smoothly at ≥24px without diacritic clipping.
-3. **iPhone 11 Confetti FPS audit (P-07):**
-   - Attach Web Inspector on Safari Mac.
-   - Measure frame rate during seal sequence confetti (target 60fps / ≥58fps, 0 jank frames).
+1. **P-14 Physical Device Verification:** Run real iOS Safari (MediaRecorder/codec check) and low-end Android verification before wide public announcement.
+2. **"Lá thư từ tương lai" (v2.1 enhancement):** Write as your future self, unlock in N years. Different register from "note to self".
+3. **Multi-note capsule:** Seal 5 notes that unlock together ("Điều ước tuổi 20"). Natural extension of the product metaphor.
+4. **Trusted friends:** Invite up to 3 people to see _select_ notes. Privacy-preserving social without public wall pressure.
+5. **Manifest check-in on unlock:** "Điều này có thành hiện thực chưa?" journaling loop.
+6. **Seasonal cosmos:** Tết, Halloween, Christmas subtle palette shifts.
+7. **Star depth by time:** Older notes recede, newer notes close in `ConstellationView`.
+8. **Print-on-demand postcard:** Ship the sealed note as physical card (v3 target).
 
 ---
 
-### 🎯 THEN — v1 Production Sign-off & Public Launch
+## 6. Deferred to v3 (out of scope)
 
-- Verify live analytics (Cloudflare Web Analytics).
-- Complete v1 acceptance sign-off.
-
----
-
-## 6. Deferred to v2 (out of scope)
-
-- Login / accounts (magic link)
-- Supabase backend + sync
-- `/bau-troi` public wall of stars
-- Email/Zalo reminders on unlock day
-- Moderation (bad-word filter, report, rate limit)
-- Reactions on public notes
+- Print-on-demand postcard shipping infrastructure
+- Curated premium paper/sticker packs & monetization
 - Multi-language (EN toggle)
-- PWA / offline mode
-- Premium tier (paper packs, sticker packs)
-- Light mode (needs a designer-scoped palette; may not be viable given the cosmos metaphor)
+- Native mobile wrapper (iOS / Android app stores)
+- Comments / replies / direct messaging (never build)
 
 ---
 
@@ -214,7 +228,7 @@ RULES
 10. Do not build v2 features without an explicit go-ahead.
 
 CURRENT BLOCKER
-No technical blockers. A11y, SEO, and CLS acceptance gaps closed. Awaiting physical device matrix (P-05, P-07).
+P-14: Real-device matrix (§10 step 9) unverified on physical hardware (skipped by owner decision on 2026-10-08). Web features, security gates, and production deployment are fully live and verified.
 
 WHEN REPORTING BACK
 - Files changed
