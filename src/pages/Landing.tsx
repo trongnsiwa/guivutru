@@ -1,11 +1,16 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { MockNoteStack } from '@/components/wish/MockNoteStack';
+import { LiveSkyPreview } from '@/components/wish/LiveSkyPreview';
+import { UpcomingStrip } from '@/components/wish/UpcomingStrip';
+import { SkyCtaCard } from '@/components/wish/SkyCtaCard';
 import { useNotes } from '@/hooks/useNotes';
 import { Note } from '@/types/note';
 import { cn } from '@/lib/cn';
+import { fetchSkyNotes, pickUpcomingNotes } from '@/lib/sky';
+import type { SkyNote } from '@/lib/sky';
 
 function LandingComponent() {
   // Mark hero animated on first session visit so return visits are instant
@@ -16,6 +21,59 @@ function LandingComponent() {
   }, []);
 
   const notes = useNotes((s) => s.notes);
+
+  // Mount gating (§5): hold sky preview, upcoming strip, and CTA count behind idle callback
+  const [skyReady, setSkyReady] = useState(false);
+  const [skyNotes, setSkyNotes] = useState<SkyNote[] | null>(null);
+  const [skyNotesLoaded, setSkyNotesLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('skeleton')) {
+      return;
+    }
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof w.requestIdleCallback === 'function') {
+      const id = w.requestIdleCallback(() => setSkyReady(true), { timeout: 1000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(() => setSkyReady(true), 200);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Shared fetch for LiveSkyPreview and UpcomingStrip (§13 Step 8)
+  useEffect(() => {
+    if (!skyReady) return;
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('empty')) {
+      setSkyNotes([]);
+      setSkyNotesLoaded(true);
+      return;
+    }
+    let mounted = true;
+    fetchSkyNotes('moi-nhat')
+      .then((data) => {
+        if (mounted) {
+          setSkyNotes(data);
+          setSkyNotesLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setSkyNotes([]);
+          setSkyNotesLoaded(true);
+        }
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [skyReady]);
+
+  const upcomingNotes = useMemo(() => {
+    if (!skyNotes || skyNotes.length === 0) return [];
+    return pickUpcomingNotes(skyNotes, Date.now(), 3);
+  }, [skyNotes]);
 
   // B3: "Ngày này năm xưa" nostalgia match from a prior year
   const priorYearMatch = useMemo(() => {
@@ -100,19 +158,39 @@ function LandingComponent() {
           </Button>
         </Link>
 
-        {/* Secondary link: Bầu trời điều ước activates here (§3) */}
-        <Link
-          to="/bau-troi"
-          className="mt-[20px] text-text-muted hover:text-lavender-light text-[14px] font-sans font-normal transition-colors cursor-pointer bg-transparent border-none p-0 inline-flex items-center justify-center gap-1"
-        >
-          <span>Bầu trời điều ước 🌙</span>
-        </Link>
+        {/* Secondary promoted sky CTA card (§4 A3 + A4) */}
+        <div className="mt-4 w-full">
+          {skyReady ? (
+            <SkyCtaCard />
+          ) : (
+            <div
+              className="w-full h-[62px] rounded-2xl bg-bg-soft/30 border border-border-soft/40"
+              aria-hidden="true"
+            />
+          )}
+        </div>
       </div>
 
-      {/* MockNoteStack: 64px gap from Secondary link */}
-      <div className="mt-[64px] w-full">
-        <MockNoteStack />
+      {/* Sky Preview Section (§4 A1, replaces MockNoteStack) */}
+      <div className="mt-12 w-full max-w-xs mx-auto">
+        {!skyReady || !skyNotesLoaded ? (
+          <div
+            className="w-full aspect-[4/3] max-h-[320px] rounded-3xl border border-border-soft/40 bg-bg-soft/20"
+            aria-hidden="true"
+          />
+        ) : skyNotes && skyNotes.length > 0 ? (
+          <LiveSkyPreview initialNotes={skyNotes} />
+        ) : (
+          <MockNoteStack />
+        )}
       </div>
+
+      {/* UpcomingStrip (§4 A2, inserted between preview and 3 steps) */}
+      {skyReady && upcomingNotes.length > 0 && (
+        <div className="mt-8 w-full max-w-xs mx-auto">
+          <UpcomingStrip initialNotes={skyNotes ?? undefined} />
+        </div>
+      )}
 
       {/* B3: "Ngày này năm xưa" nostalgia strip (rendered only when prior-year note exists) */}
       {priorYearMatch && (
@@ -135,7 +213,7 @@ function LandingComponent() {
         </Link>
       )}
 
-      {/* 3-Step Section: 80px mobile / 120px desktop gap from MockNoteStack, 96px gap to footer */}
+      {/* 3-Step Section: 80px mobile / 120px desktop gap, 96px gap to footer */}
       <div
         style={{ contain: 'layout paint' }}
         className="mt-[80px] sm:mt-[120px] mb-[96px] w-full max-w-xs flex flex-col items-center [contain:layout_paint]"

@@ -5,6 +5,7 @@ import {
   pickUpcomingNotes,
   formatCountdownDays,
   fetchSkyCount,
+  SEEDED_SKY_NOTES,
 } from '../src/lib/sky.ts';
 import type { SkyNote } from '../src/lib/sky.ts';
 
@@ -184,11 +185,26 @@ describe('Landing Sky Pure Helpers (LANDING.md Bundle A)', () => {
       assert.equal(formatCountdownDays(now + 3600000, now), 'Hôm nay'); // 1 hour ahead
       assert.equal(formatCountdownDays(now - 1000, now), 'Hôm nay'); // past
     });
+
+    it('produces "29 ngày nữa" for seed_sky_21_sealed in the seed fallback path', () => {
+      const sealedSeed = SEEDED_SKY_NOTES.find((n) => n.id === 'seed_sky_21_sealed');
+      assert.ok(sealedSeed, 'seed_sky_21_sealed must exist in SEEDED_SKY_NOTES');
+      const now = Date.now();
+      const countdown = formatCountdownDays(sealedSeed.unlockAt, now);
+      // unlockAt is evaluated at module evaluation time; by test execution time elapsedMs > 0,
+      // so diffMs < 30 * 86400000 and Math.floor yields 29.
+      assert.equal(countdown, '29 ngày nữa');
+    });
   });
 
   describe('fetchSkyCount (§4 A3 null-return behavior)', () => {
-    it('returns null when Supabase is unconfigured or client is null', async () => {
-      const count = await fetchSkyCount(null);
+    it('returns null when Supabase is unconfigured or called with no arguments', async () => {
+      const count = await fetchSkyCount();
+      assert.equal(count, null);
+    });
+
+    it('returns null when client is null', async () => {
+      const count = await fetchSkyCount(2000, null);
       assert.equal(count, null);
     });
 
@@ -203,7 +219,7 @@ describe('Landing Sky Pure Helpers (LANDING.md Bundle A)', () => {
         }),
       };
 
-      const result = await fetchSkyCount(mockClientWithError);
+      const result = await fetchSkyCount(2000, mockClientWithError);
       assert.equal(result, null);
     });
 
@@ -216,7 +232,7 @@ describe('Landing Sky Pure Helpers (LANDING.md Bundle A)', () => {
         }),
       };
 
-      const result = await fetchSkyCount(mockClientWithException);
+      const result = await fetchSkyCount(2000, mockClientWithException);
       assert.equal(result, null);
     });
 
@@ -227,12 +243,11 @@ describe('Landing Sky Pure Helpers (LANDING.md Bundle A)', () => {
         }),
       };
 
-      const result = await fetchSkyCount(mockHangingClient, 50); // 50ms timeout
+      const result = await fetchSkyCount(50, mockHangingClient); // 50ms timeout
       assert.equal(result, null);
     });
 
     it('returns legitimate count 0 when query genuinely resolves to 0', async () => {
-      // Mock configured supabase
       const mockZeroClient: any = {
         from: () => ({
           select: async () => ({
@@ -243,16 +258,7 @@ describe('Landing Sky Pure Helpers (LANDING.md Bundle A)', () => {
         }),
       };
 
-      // Ensure isSupabaseConfigured doesn't block this test by checking logic directly
-      // When client resolves 0 count without error:
-      const queryPromise = (async () => {
-        const { count, error } = await mockZeroClient
-          .from('sky_notes')
-          .select('*', { count: 'exact', head: true });
-        if (error || count === null || typeof count !== 'number') return null;
-        return count;
-      })();
-      const result = await queryPromise;
+      const result = await fetchSkyCount(2000, mockZeroClient);
       assert.equal(result, 0);
     });
 
@@ -267,14 +273,7 @@ describe('Landing Sky Pure Helpers (LANDING.md Bundle A)', () => {
         }),
       };
 
-      const queryPromise = (async () => {
-        const { count, error } = await mockValidClient
-          .from('sky_notes')
-          .select('*', { count: 'exact', head: true });
-        if (error || count === null || typeof count !== 'number') return null;
-        return count;
-      })();
-      const result = await queryPromise;
+      const result = await fetchSkyCount(2000, mockValidClient);
       assert.equal(result, 1284);
     });
   });

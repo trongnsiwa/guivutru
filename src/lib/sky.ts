@@ -616,13 +616,14 @@ export function formatCountdownDays(unlockAt: number, nowMs: number): string {
 /**
  * Live star count query for landing sky card (§4 A3).
  * Performs a HEAD request ({ count: 'exact', head: true }) on sky_notes.
+ * Resolves the Supabase client internally; callers must never thread a client.
  * Returns exact number if resolved, or null (never 0) on failure, timeout, or unconfigured Supabase.
  */
 export async function fetchSkyCount(
-  client = supabase,
-  timeoutMs = 2000
+  timeoutMs = 2000,
+  client = supabase
 ): Promise<number | null> {
-  if (!isSupabaseConfigured || !client) {
+  if ((client === supabase && !isSupabaseConfigured) || !client) {
     return null;
   }
 

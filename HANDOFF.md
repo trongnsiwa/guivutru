@@ -13,8 +13,8 @@
 | **Repo**           | gui-vu-tru (local)                                        |
 | **Stack**          | Vite + React 18 + TS + Tailwind + Framer Motion + Zustand |
 | **Hosting**        | Cloudflare Pages — live at guivutru.pages.dev             |
-| **Status**         | v2.0, v2.1, v2.2 shipped to production. Voice notes shipped.         |
-| **Last worked on** | 2026-10-08                                                |
+| **Status**         | v2.0, v2.1, v2.2 shipped to prod. Voice notes shipped. Landing Bundle A verified. |
+| **Last worked on** | 2026-10-09                                                |
 
 ---
 
@@ -158,6 +158,15 @@
 - Private Supabase Storage bucket `note-audio` with 5MB cap and mime validation.
 - Database-level RLS on `storage.objects` enforcing `unlock_at <= now()` before audio retrieval or signed URL creation.
 
+### ✅ Landing Refactor — Bundle A (The Sky Is Real) (verified 2026-10-09)
+
+- **A1 `LiveSkyPreview`:** Contained 4:3 starbox (max 12 stars) with CSS-only twinkle and lazy-loaded `SkyNoteModal` inline. Replaces `MockNoteStack` when public notes exist; `MockNoteStack` is retained as offline/empty/error fallback.
+- **A2 `UpcomingStrip`:** Compact countdown row showing up to 3 upcoming notes linking to `/bau-troi` (fails silent if empty or error).
+- **A3 Live Count:** Async `HEAD` count query via `fetchSkyCount(timeoutMs = 2000)` with failure ladder (hides subtitle on error or timeout).
+- **A4 `SkyCtaCard`:** Promoted card CTA routing to `/bau-troi` with live count subtitle.
+- **Shared Helpers & Gating:** Extracted pure helpers (`pickPreviewNotes`, `pickUpcomingNotes`, `formatCountdownDays`, `fetchSkyCount`, and `computeStarCoordinates` position math) into `src/lib/sky.ts`. Idle-mount gating (`requestIdleCallback` / 200ms fallback) in `Landing.tsx` ensures zero LCP impact.
+- **Verification & Perf:** 0-pixel/0-coordinate regression on `/bau-troi` and `/bau-troi/cua-toi`. Landing chunk gzip is 5.01 kB. Mobile Lighthouse median on `/` across 3 runs is Perf 93, LCP 2892ms, CLS 0.0044, TBT 0ms (§8 hard gate ≥90 met). `tests/landing-sky.test.ts` adds 20 tests.
+
 ---
 
 ## 4. Known Issues / Open Bugs
@@ -173,11 +182,12 @@
 | P-07 | Confetti performance on low-end devices not measured                     | 🟢 P2    | Pending (awaits physical iPhone 11 test)               |
 | P-08 | Light mode not fully tested                                              | 🟢 P2    | Won't fix — light mode removed from v1.                |
 | P-09 | Mobile 4G LCP 1.76s vs SPEC §12 <1.5s (Desktop unthrottled is 1.3s)       | 🟢 P2    | Closed — SPEC §12 amended to reflect achievable target (see SPEC §12 footnote). |
-| P-10 | Live / Performance regression under simulated 4G (76 vs prior 98)        | 🟡 P1    | Closed — diagnostic proved measurement noise (16 pt spread, TBT 0ms across all 5 runs). No code change needed. |
+| P-10 | Live / Performance regression under simulated 4G (76 vs prior 98)        | 🟡 P1    | Closed — diagnostic proved measurement noise (16 pt spread, TBT 0ms across 5 runs; Oct 6 baseline was against a different environment). Current tree verified median on `/` is 93 (LCP 2892ms, CLS 0.0044, TBT 0ms). |
 | P-11 | Footer color contrast below WCAG AA (3.49:1 on nav links, 2.30:1 on tagline) | 🟡 P1 | Closed (see Fix 1)                                     |
 | P-12 | meta-viewport blocks user zoom                                           | 🟡 P1    | Closed (see Fix 2)                                     |
 | SEC-01 | Supabase Auth Provider Configuration (Manual Dashboard Action) | 🟡 P1 | Closed (verified 2026-10-08: magic link OTP enforced, password/OAuth disabled in Supabase dashboard) |
 | P-14 | Real-device matrix (§10 step 9) skipped by owner decision on 2026-10-08. iOS Safari MediaRecorder codec, iOS PWA install flow, and low-end Android perf are UNVERIFIED in prod. | 🟡 P1 | Open |
+| DEC-2026-10-09-01 | Codebase-wide removal of reduced-motion support — owner directive overriding LANDING.md §2 row 4, HANDOFF.md §2, POLISH.md §2 item 6, and V2.md §7 item 2. No prefers-reduced-motion media queries, useReducedMotion hooks, MotionConfig, or disableForReducedMotion options remain in src/ or tests/. | 🟡 P1 | Closed |
 
 ---
 
@@ -221,7 +231,7 @@ RULES
 4. Never re-add removed fonts: Baloo 2, Be Vietnam Pro, Caveat, Fredoka,
    Varela Round, Fraunces, Quicksand, Comfortaa, Kalam.
 5. Ingrid Darling must never render below 24px.
-6. Respect prefers-reduced-motion on every animation.
+6. Reduced-motion support is intentionally removed codebase-wide per DEC-2026-10-09-01; future sessions must not re-add it without fresh owner consent.
 7. Only animate transform + opacity. Never width, height, top, left.
 8. Route transitions: opacity only, ≤200ms.
 9. Zustand selectors must return primitives or use useShallow.
@@ -268,6 +278,9 @@ When you come back to this project:
 | `src/components/fx/StarField.tsx` | 3-layer parallax cosmos background               |
 | `src/pages/Write/`                | 3-step write flow                                |
 | `src/pages/Sealed/`               | Seal animation + success screen                  |
+| `src/components/wish/LiveSkyPreview.tsx` | Contained 4:3 starbox preview on `/` with CSS-only twinkle |
+| `src/components/wish/UpcomingStrip.tsx` | Countdown strip for upcoming public sealed notes |
+| `src/components/wish/SkyCtaCard.tsx` | Promoted CTA card linking to `/bau-troi` with live count |
 | `tailwind.config.ts`              | Design tokens                                    |
 | `functions/[[path]].ts`           | Cloudflare Pages SPA fallback Function           |
 | `_routes.json`                    | Pages Function static route exclusion config     |

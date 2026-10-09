@@ -229,3 +229,19 @@
 .animate-star-breathe {
   animation: star-breathe 3s ease-in-out infinite;
 }
+
+/* LiveSkyPreview compositor-driven twinkle animation (§4 A1) */
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: var(--star-base-op, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    opacity: var(--star-peak-op, 1);
+    transform: scale(1.15);
+  }
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle var(--star-duration, 3s) ease-in-out infinite var(--star-delay, 0s);
+}
